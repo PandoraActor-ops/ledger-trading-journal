@@ -7,6 +7,7 @@ function Login({ onLogin }) {
   const [alias,    setAlias]    = useState("");
   const [step,     setStep]     = useState("connect"); // connect | register | token
   const [loading,  setLoading]  = useState(false);
+  const [slowConn, setSlowConn] = useState(false);
   const [error,    setError]    = useState(null);
   const [apiToken, setApiToken] = useState(null);
 
@@ -33,13 +34,16 @@ function Login({ onLogin }) {
       return;
     }
 
+    // Show "slow connection" hint after 5s
+    const slowTimer = setTimeout(() => setSlowConn(true), 5000);
+
     try {
       const email = `mt5_${account.trim()}@ledger.app`;
 
-      // Race the signIn against a 12-second timeout
+      // Race the signIn against a 30-second timeout (Supabase cold-start can take ~20s)
       const signInPromise = window.sbClient.auth.signInWithPassword({ email, password });
       const timeout = new Promise((_, rej) =>
-        setTimeout(() => rej(new Error("Connection timed out. Check your internet and try again.")), 12000)
+        setTimeout(() => rej(new Error("Connection timed out — server is warming up. Please try again in a few seconds.")), 30000)
       );
       const { data, error: signInErr } = await Promise.race([signInPromise, timeout]);
 
@@ -57,6 +61,8 @@ function Login({ onLogin }) {
     } catch (err) {
       setError(err?.message || "Connection failed. Please try again.");
     }
+    clearTimeout(slowTimer);
+    setSlowConn(false);
     setLoading(false);
   };
 
@@ -219,6 +225,11 @@ function Login({ onLogin }) {
                   disabled={loading}>
                   {loading ? "Connecting…" : "Continue →"}
                 </button>
+                {slowConn && (
+                  <div style={{ marginTop: 10, fontSize: 12, color: "var(--ink-3)", textAlign: "center" }}>
+                    ⏳ Server is waking up — this can take up to 30 seconds on first connect…
+                  </div>
+                )}
               </form>
               <div style={{ marginTop: 20, display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "var(--ink-3)" }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--gain)" }} />
