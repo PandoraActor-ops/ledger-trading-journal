@@ -62,51 +62,69 @@ function Login({ onLogin }) {
     setLoading(true);
 
     if (!window.sbClient) {
-      // Mock mode
       await delay(700);
       setLoading(false);
       onLogin(trimAlias);
       return;
     }
 
-    const email = `mt5_${account.trim()}@ledger.app`;
-    const { data, error: signUpErr } = await window.sbClient.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          alias:       trimAlias,
-          mt5_account: account.trim(),
-          mt5_server:  server,
-          country:     "TH",
-        },
-      },
-    });
+    try {
+      const email = `mt5_${account.trim()}@ledger.app`;
 
-    if (signUpErr) {
-      setError(signUpErr.message);
-      setLoading(false);
-      return;
-    }
+      // ── Try sign-up first ────────────────────────────────────────
+      let user = null;
+      const { data, error: signUpErr } = await window.sbClient.auth.signUp({
+        email,
+        password,
+        options: { data: { alias: trimAlias, mt5_account: account.trim(), mt5_server: server, country: "TH" } },
+      });
 
-    // Fetch the auto-generated EA token (created by DB trigger)
-    if (data?.user) {
-      await delay(400); // brief wait for trigger to run
-      const { data: tokenRow } = await window.sbClient
-        .from("api_tokens")
-        .select("token")
-        .eq("user_id", data.user.id)
-        .single();
-      if (tokenRow?.token) {
-        setApiToken(tokenRow.token);
-        setStep("token");
-        setLoading(false);
-        return;
+      if (signUpErr) {
+        // "User already registered" → try signing in instead
+        const alreadyExists =
+          signUpErr.message?.toLowerCase().includes("already") ||
+          signUpErr.message?.toLowerCase().includes("registered") ||
+          signUpErr.status === 422;
+
+        if (alreadyExists) {
+          const { data: siData, error: siErr } = await window.sbClient.auth.signInWithPassword({ email, password });
+          if (siErr) {
+            setError("Account exists — wrong password? Go back to Step 1 and sign in.");
+            setLoading(false);
+            return;
+          }
+          user = siData?.user;
+        } else {
+          setError(signUpErr.message);
+          setLoading(false);
+          return;
+        }
+      } else {
+        user = data?.user;
       }
-    }
 
-    setLoading(false);
-    onLogin(trimAlias);
+      // ── Fetch EA token (created by DB trigger) ───────────────────
+      if (user) {
+        await delay(600); // give trigger time to run
+        const { data: tokenRow } = await window.sbClient
+          .from("api_tokens")
+          .select("token")
+          .eq("user_id", user.id)
+          .single();
+        if (tokenRow?.token) {
+          setApiToken(tokenRow.token);
+          setStep("token");
+          setLoading(false);
+          return;
+        }
+      }
+
+      setLoading(false);
+      onLogin(trimAlias);
+    } catch (err) {
+      setError(err?.message || "Something went wrong. Please try again.");
+      setLoading(false);
+    }
   };
 
   // ── Step 3: Show EA token, then enter ─────────────────────────────
