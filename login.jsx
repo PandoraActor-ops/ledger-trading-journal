@@ -34,32 +34,56 @@ function Login({ onLogin }) {
       return;
     }
 
-    // Show "slow connection" hint after 5s
-    const slowTimer = setTimeout(() => setSlowConn(true), 5000);
+    // Show "waking up" hint after 6s
+    const slowTimer = setTimeout(() => setSlowConn(true), 6000);
 
     try {
-      const email = `mt5_${account.trim()}@ledger.app`;
+      const email   = `mt5_${account.trim()}@ledger.app`;
+      const SUPA    = window.SUPABASE_URL;
+      const ANON    = window.SUPABASE_ANON;
 
-      // Race the signIn against a 30-second timeout (Supabase cold-start can take ~20s)
-      const signInPromise = window.sbClient.auth.signInWithPassword({ email, password });
-      const timeout = new Promise((_, rej) =>
-        setTimeout(() => rej(new Error("Connection timed out — server is warming up. Please try again in a few seconds.")), 30000)
-      );
-      const { data, error: signInErr } = await Promise.race([signInPromise, timeout]);
+      // ── Use raw fetch (bypasses JS-client quirks, same as curl) ──
+      const ctrl = new AbortController();
+      const killTimer = setTimeout(() => ctrl.abort(), 25000);
 
-      if (data?.session) {
+      let res, json;
+      try {
+        res  = await fetch(`${SUPA}/auth/v1/token?grant_type=password`, {
+          method:  "POST",
+          signal:  ctrl.signal,
+          headers: { "apikey": ANON, "Content-Type": "application/json" },
+          body:    JSON.stringify({ email, password }),
+        });
+        json = await res.json();
+      } finally {
+        clearTimeout(killTimer);
+      }
+
+      if (res.ok && json.access_token) {
+        // Inject the session into the JS client so the rest of the app works
+        await window.sbClient.auth.setSession({
+          access_token:  json.access_token,
+          refresh_token: json.refresh_token,
+        });
+        clearTimeout(slowTimer);
+        setSlowConn(false);
         setLoading(false);
         onLogin("");
         return;
       }
 
-      if (signInErr?.message?.toLowerCase().includes("invalid login credentials")) {
+      const msg = json?.msg || json?.error_description || json?.message || "";
+      if (msg.toLowerCase().includes("invalid") || res.status === 400) {
         setStep("register");
-      } else if (signInErr) {
-        setError(signInErr.message);
+      } else {
+        setError(msg || `Auth error (HTTP ${res.status})`);
       }
     } catch (err) {
-      setError(err?.message || "Connection failed. Please try again.");
+      if (err.name === "AbortError") {
+        setError("Connection timed out — please try again.");
+      } else {
+        setError(err?.message || "Connection failed. Please try again.");
+      }
     }
     clearTimeout(slowTimer);
     setSlowConn(false);
