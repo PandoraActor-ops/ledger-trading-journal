@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "trading-journal",
+      "runtimeExecutable": "PowerShell",
+      "runtimeArgs": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "D:\\WEB Trading.Journal\\server.ps1"],
+      "port": 8080,
+    "autoPort": true
+    }
+  ]
+}

@@ -1,0 +1,101 @@
+/* Tier definitions — gemstone-themed ranking
+   Tier 1 (lowest) → Tier 6 (highest)
+*/
+
+const TIERS = {
+  obsidian: {
+    id: "obsidian",
+    rank: 1,
+    name: "Obsidian",
+    thai: "ออบซิเดียน",
+    primary: "#1F1B2E",
+    accent: "#6B5B95",
+    tint: "#ECE9F0",
+    ink: "#FFFFFF",
+    accentInk: "#A89BC4",
+    gradient: "radial-gradient(120% 100% at 70% 20%, #2D2440 0%, #1F1B2E 60%, #0F0C1A 100%)",
+    description: "Volcanic glass — forged under pressure.",
+  },
+  blackopal: {
+    id: "blackopal",
+    rank: 2,
+    name: "Black Opal",
+    thai: "แบล็กโอปอล",
+    primary: "#0D1B2A",
+    accent: "#4FB6E8",
+    tint: "#E4EDF5",
+    ink: "#FFFFFF",
+    accentInk: "#7FD0F2",
+    gradient: "conic-gradient(from 200deg at 70% 30%, #0D1B2A 0deg, #1B3340 60deg, #2C1B40 140deg, #1A3340 220deg, #0D1B2A 360deg)",
+    description: "Iridescent fire in the dark.",
+  },
+  cobalt: {
+    id: "cobalt",
+    rank: 3,
+    name: "Cobalt",
+    thai: "โคบอลต์",
+    primary: "#1B3C8B",
+    accent: "#3A73C4",
+    tint: "#E2EAF7",
+    ink: "#FFFFFF",
+    accentInk: "#7FA8E0",
+    gradient: "radial-gradient(120% 100% at 80% 0%, #2E58B5 0%, #1B3C8B 50%, #0E2566 100%)",
+    description: "Pigment of cathedrals.",
+  },
+  redberyl: {
+    id: "redberyl",
+    rank: 4,
+    name: "Red Beryl",
+    thai: "เรดเบริล",
+    primary: "#8B1A2F",
+    accent: "#C24A5E",
+    tint: "#F6E4E8",
+    ink: "#FFFFFF",
+    accentInk: "#E8859B",
+    gradient: "radial-gradient(120% 100% at 30% 0%, #B8334A 0%, #8B1A2F 55%, #5E0F1F 100%)",
+    description: "Rarer than gem-grade diamond.",
+  },
+  pallasite: {
+    id: "pallasite",
+    rank: 5,
+    name: "Pallasite",
+    thai: "พัลลาไซต์",
+    primary: "#3A4A22",
+    accent: "#8FB339",
+    tint: "#EEEFE0",
+    ink: "#FFFFFF",
+    accentInk: "#C5D87E",
+    gradient: "radial-gradient(120% 100% at 70% 20%, #5C6B2E 0%, #3A4A22 50%, #1F2A12 100%) padding-box, linear-gradient(180deg, #BF9B30 0%, #8FB339 100%) border-box",
+    description: "Meteoric — peridot suspended in iron.",
+  },
+  diamond: {
+    id: "diamond",
+    rank: 6,
+    name: "Diamond",
+    thai: "ไดมอนด์",
+    primary: "#1A2A3E",
+    accent: "#7FB3E8",
+    tint: "#EAF1F8",
+    ink: "#FFFFFF",
+    accentInk: "#BFD9F0",
+    gradient: "conic-gradient(from 0deg at 60% 40%, #1A2A3E 0deg, #2B3E5E 60deg, #4A6B8E 120deg, #2B3E5E 200deg, #1A2A3E 320deg, #1A2A3E 360deg)",
+    description: "Hardest. Brightest. The summit.",
+  },
+};
+
+// Reassign traders to new tier system (top of leaderboard = Obsidian, the new T1)
+const TIER_BY_RANK = {
+  1: "obsidian",
+  2: "obsidian",
+  3: "blackopal",
+  4: "blackopal",
+  5: "cobalt",
+  6: "cobalt",
+  7: "redberyl",
+  8: "redberyl",
+  9: "pallasite",
+  10: "diamond",
+};
+
+window.TIERS = TIERS;
+window.TIER_BY_RANK = TIER_BY_RANK;
