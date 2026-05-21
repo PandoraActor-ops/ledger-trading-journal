@@ -27,28 +27,35 @@ function Login({ onLogin }) {
     setLoading(true);
 
     if (!window.sbClient) {
-      // Mock mode — simulate delay and go to alias step
       await delay(900);
       setLoading(false);
       setStep("register");
       return;
     }
 
-    const email = `mt5_${account.trim()}@ledger.app`;
-    const { data, error: signInErr } = await window.sbClient.auth.signInWithPassword({ email, password });
+    try {
+      const email = `mt5_${account.trim()}@ledger.app`;
 
-    if (data?.session) {
-      // Existing user — logged in ✓
-      setLoading(false);
-      onLogin("");
-      return;
-    }
+      // Race the signIn against a 12-second timeout
+      const signInPromise = window.sbClient.auth.signInWithPassword({ email, password });
+      const timeout = new Promise((_, rej) =>
+        setTimeout(() => rej(new Error("Connection timed out. Check your internet and try again.")), 12000)
+      );
+      const { data, error: signInErr } = await Promise.race([signInPromise, timeout]);
 
-    // New user, or wrong password
-    if (signInErr?.message?.toLowerCase().includes("invalid login credentials")) {
-      setStep("register");
-    } else if (signInErr) {
-      setError(signInErr.message);
+      if (data?.session) {
+        setLoading(false);
+        onLogin("");
+        return;
+      }
+
+      if (signInErr?.message?.toLowerCase().includes("invalid login credentials")) {
+        setStep("register");
+      } else if (signInErr) {
+        setError(signInErr.message);
+      }
+    } catch (err) {
+      setError(err?.message || "Connection failed. Please try again.");
     }
     setLoading(false);
   };
