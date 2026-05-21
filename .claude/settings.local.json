@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($items = Get-ChildItem -Force \"D:\\\\WEB Trading.Journal\"; \"Count: $\\($items.Count\\)\"; $items | ForEach-Object { $_.FullName })",
+      "WebFetch(domain:api.anthropic.com)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_in_Chrome__navigate",
+      "mcp__Claude_in_Chrome__computer",
+      "PowerShell(node --version)",
+      "PowerShell(Start-Process PowerShell -ArgumentList \"-NoProfile -ExecutionPolicy Bypass -File `\"D:\\\\WEB Trading.Journal\\\\server.ps1`\"\" -WindowStyle Hidden; Start-Sleep -Seconds 1; \"Server starting...\")",
+      "mcp__Claude_Preview__preview_start",
+      "mcp__Claude_in_Chrome__list_connected_browsers",
+      "mcp__Claude_in_Chrome__select_browser",
+      "mcp__Claude_in_Chrome__browser_batch",
+      "Bash(git --version)",
+      "Bash(gh --version)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+# server scripts (local only)
+server.ps1
+run.bat
+design.tar.gz
+design/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.suo
