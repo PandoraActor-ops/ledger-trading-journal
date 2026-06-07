@@ -12,6 +12,40 @@ function Leaderboard({ onPick, period, setPeriod }) {
 
   return (
     <div className="page page-fade">
+      {/* Hero Section */}
+      <div className="hero-section">
+        <div className="hero-content">
+          <div className="hero-header">
+            <h1 className="hero-title">Codex Trading Competition</h1>
+            <p className="hero-subtitle">Compete globally. Win prizes. Prove your trading edge.</p>
+          </div>
+
+          <div className="hero-stats">
+            <div className="stat-card">
+              <div className="stat-value">$50,000</div>
+              <div className="stat-label">Prize Pool</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">4,217</div>
+              <div className="stat-label">Participants</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">23d 06h</div>
+              <div className="stat-label">Time Left</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">Realtime</div>
+              <div className="stat-label">Rankings Update</div>
+            </div>
+          </div>
+
+          <div className="hero-ctas">
+            <button className="cta-primary" onClick={() => window.location.href = '/join'}>Join Competition</button>
+            <button className="cta-secondary" onClick={() => window.scrollTo({ top: document.querySelector('.page-head').offsetTop, behavior: 'smooth' })}>View Leaderboard</button>
+          </div>
+        </div>
+      </div>
+
       <div className="page-head">
         <div>
           <div className="kicker">Global Standings · Live</div>
