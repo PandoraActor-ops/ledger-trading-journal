@@ -3,7 +3,7 @@
 function App() {
   const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
     "dashboardVariant": "A",
-    "showLogin": true,
+    "showLogin": false,
     "accent": "green",
     "myTier": "auto"
   }/*EDITMODE-END*/;
