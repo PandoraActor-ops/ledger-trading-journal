@@ -1,39 +1,620 @@
 <!doctype html>
-<html lang="en">
+<html lang="th">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ledger — Trading Journal</title>
+  <title>Codex Trading Journal League</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <style>
+:root {
+  --font-display: "Instrument Serif", "Times New Roman", serif;
+  --font-sans: "Geist", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --bg: #F4F2EC; --bg-elev: #FAF8F3;
+  --surface: #FFFFFF; --surface-2: #F8F6F0;
+  --ink: #14130F; --ink-2: #3B3A35; --ink-3: #6B6962; --ink-4: #9A988F;
+  --line: #E5E2D8; --line-2: #EFEDE5;
+  --gain: oklch(0.52 0.10 150); --gain-tint: oklch(0.96 0.025 150);
+  --loss: oklch(0.52 0.12 25);  --loss-tint: oklch(0.96 0.025 25);
+  --gold: oklch(0.74 0.13 80); --silver: oklch(0.78 0.01 90); --bronze: oklch(0.62 0.10 50);
+  --r-sm: 6px; --r: 10px; --r-lg: 16px; --r-xl: 24px;
+  --shadow-sm: 0 1px 0 rgba(20,19,15,0.04), 0 1px 2px rgba(20,19,15,0.04);
+  --shadow: 0 1px 0 rgba(20,19,15,0.04), 0 6px 24px rgba(20,19,15,0.06);
+}
+*{box-sizing:border-box;} html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--font-sans);font-size:14px;line-height:1.4;-webkit-font-smoothing:antialiased;}
+button{font-family:inherit;cursor:pointer;border:none;background:none;}
+.tabular{font-variant-numeric:tabular-nums;font-feature-settings:"tnum";}
+.mono{font-family:var(--font-mono);}
+.serif{font-family:var(--font-display);font-weight:400;letter-spacing:-0.01em;}
+
+/* App shell */
+.app{min-height:100vh;display:flex;flex-direction:column;}
+
+/* Nav */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:18px 40px;border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:0;z-index:10;backdrop-filter:blur(8px);}
+.nav-brand{display:flex;align-items:center;gap:12px;font-family:var(--font-display);font-size:22px;letter-spacing:-0.01em;cursor:pointer;}
+.nav-brand .glyph{width:26px;height:26px;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-family:var(--font-display);font-size:16px;border-radius:50%;}
+.nav-right{display:flex;align-items:center;gap:12px;}
+.nav-tab{padding:8px 14px;border-radius:999px;font-size:13px;letter-spacing:0.02em;color:var(--ink-3);background:none;border:none;cursor:pointer;transition:all .15s ease;}
+.nav-tab:hover{color:var(--ink);background:var(--surface-2);}
+.nav-tab.active{color:var(--ink);background:var(--surface);box-shadow:var(--shadow-sm);}
+.live-pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink-3);letter-spacing:0.04em;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--gain);animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+/* Page */
+.page{padding:32px 40px 80px;max-width:1440px;margin:0 auto;width:100%;}
+.page-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:28px;}
+.page-head>div:first-child{min-width:0;flex:1 1 460px;}
+.page-title{font-family:var(--font-display);font-size:52px;line-height:1.02;letter-spacing:-0.02em;margin:0 0 2px;}
+.page-subtitle{color:var(--ink-3);margin-top:8px;max-width:540px;font-size:13px;line-height:1.6;}
+.kicker{font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink-3);}
+
+/* Hero Section */
+.hero-section{background:linear-gradient(135deg,var(--surface) 0%,var(--surface-2) 100%);border-bottom:1px solid var(--line);padding:48px 40px;margin:-32px -40px 32px -40px;}
+.hero-content{max-width:1440px;margin:0 auto;}
+.hero-header{margin-bottom:36px;}
+.hero-title{font-family:var(--font-display);font-size:48px;line-height:1.1;letter-spacing:-0.02em;margin:0 0 12px 0;color:var(--ink);}
+.hero-subtitle{font-size:18px;color:var(--ink-2);margin:0;max-width:600px;line-height:1.5;}
+.hero-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px;margin-bottom:32px;}
+.stat-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px;text-align:center;}
+.stat-value{font-family:var(--font-display);font-size:24px;font-weight:600;color:var(--ink);margin-bottom:6px;line-height:1.2;}
+.stat-label{font-size:11px;color:var(--ink-3);letter-spacing:0.04em;text-transform:uppercase;}
+.hero-ctas{display:flex;gap:12px;flex-wrap:wrap;}
+.cta-primary,.cta-secondary{border:none;border-radius:var(--r-lg);font-size:14px;font-weight:500;letter-spacing:0.01em;padding:14px 28px;cursor:pointer;transition:all 0.2s ease;white-space:nowrap;}
+.cta-primary{background:var(--ink);color:var(--bg);}
+.cta-primary:hover{background:var(--ink-2);transform:translateY(-2px);box-shadow:0 4px 12px rgba(20,19,15,0.12);}
+.cta-secondary{background:var(--surface);color:var(--ink);border:1.5px solid var(--ink);}
+.cta-secondary:hover{background:var(--ink);color:var(--bg);transform:translateY(-2px);}
+
+/* Card */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:20px;}
+
+/* Pill */
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink-3);}
+.pill.gain{color:var(--gain);background:var(--gain-tint);border-color:transparent;}
+.pill.loss{color:var(--loss);background:var(--loss-tint);border-color:transparent;}
+
+/* Leaderboard table */
+.lb-table{width:100%;border-collapse:collapse;table-layout:auto;}
+.lb-row{border-bottom:1px solid var(--line-2);transition:background .2s ease;}
+.lb-row:hover{background:var(--surface-2);}
+.lb-row td{padding:18px 12px;vertical-align:middle;}
+.lb-row .rank-cell{width:88px;}
+.lb-row .user-cell{min-width:220px;}
+.lb-row.podium-1{background:linear-gradient(90deg,color-mix(in oklab,var(--gold) 14%,transparent),transparent 60%);}
+.lb-row.podium-2{background:linear-gradient(90deg,color-mix(in oklab,var(--silver) 14%,transparent),transparent 60%);}
+.lb-row.podium-3{background:linear-gradient(90deg,color-mix(in oklab,var(--bronze) 14%,transparent),transparent 60%);}
+.rank-num{font-family:var(--font-display);font-size:36px;line-height:1;color:var(--ink);display:inline-block;width:48px;}
+.rank-num.muted{color:var(--ink-4);font-size:28px;}
+.trend{display:inline-flex;align-items:center;gap:2px;font-size:11px;font-family:var(--font-mono);margin-left:6px;}
+.trend.up{color:var(--gain);} .trend.down{color:var(--loss);} .trend.flat{color:var(--ink-4);}
+.avatar{width:40px;height:40px;border-radius:50%;display:inline-grid;place-items:center;font-family:var(--font-display);font-size:17px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);flex-shrink:0;}
+.user-block{display:flex;align-items:center;gap:14px;}
+.user-name{font-size:15px;font-weight:500;color:var(--ink);}
+.user-meta{font-size:12px;color:var(--ink-3);display:flex;align-items:center;gap:8px;margin-top:2px;}
+.metric-big{font-family:var(--font-display);font-size:28px;letter-spacing:-0.01em;line-height:1;white-space:nowrap;}
+.metric-big.gain{color:var(--gain);} .metric-big.loss{color:var(--loss);}
+
+/* Tier */
+.tier{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 8px;border-radius:999px;font-size:11px;letter-spacing:0.04em;background:var(--surface-2);border:1px solid var(--line);color:var(--ink-2);white-space:nowrap;}
+.tier .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-4);box-shadow:0 0 0 1px rgba(255,255,255,0.6);}
+.tier.obsidian .dot{background:linear-gradient(135deg,#6B5B95,#1F1B2E);}
+.tier.blackopal .dot{background:conic-gradient(from 0deg,#4FB6E8,#B65BD6,#5BE8B5,#E8B85B,#4FB6E8);}
+.tier.cobalt .dot{background:radial-gradient(circle at 30% 30%,#5A8FE0,#1B3C8B);}
+.tier.redberyl .dot{background:radial-gradient(circle at 30% 30%,#E8859B,#8B1A2F);}
+.tier.pallasite .dot{background:radial-gradient(circle at 30% 30%,#C5D87E,#5C6B2E 60%,#8B6B1E);}
+.tier.diamond .dot{background:conic-gradient(from 0deg,#FFFFFF,#BFD9F0,#E8E8FF,#FFFFFF,#BFD9F0);}
+
+/* Sparkline */
+.spark{width:100%;height:32px;display:block;}
+.spark path.line{fill:none;stroke:var(--ink);stroke-width:1.25;}
+.spark path.fill{opacity:0.06;}
+.spark.gain path.line{stroke:var(--gain);} .spark.gain path.fill{fill:var(--gain);}
+.spark.loss path.line{stroke:var(--loss);} .spark.loss path.fill{fill:var(--loss);}
+
+/* Podium card */
+.podium-card{position:relative;cursor:pointer;padding:24px 24px 22px;transition:transform .18s ease,box-shadow .18s ease;}
+.podium-card:hover{transform:translateY(-3px);box-shadow:var(--shadow);}
+.podium-label{font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px;}
+.podium-rank{font-family:var(--font-display);font-size:64px;line-height:0.95;letter-spacing:-0.03em;margin:0 0 10px;}
+.podium-name{font-size:17px;font-weight:500;margin-bottom:4px;}
+.podium-meta{font-size:12px;color:var(--ink-3);}
+.podium-score-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:16px;}
+.podium-composite{font-family:var(--font-display);font-size:36px;letter-spacing:-0.02em;line-height:1;}
+.podium-rank-name{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-3);margin-top:3px;}
+.podium-return{font-size:15px;font-family:var(--font-display);color:var(--gain);}
+
+/* Skeleton loader */
+.skel{background:linear-gradient(90deg,var(--line-2) 25%,var(--line) 50%,var(--line-2) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:4px;}
+@keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+
+/* Row-3 */
+.row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+
+/* Countdown */
+.countdown{font-family:var(--font-mono);font-size:13px;color:var(--ink-2);}
+.countdown strong{color:var(--ink);}
+
+/* Competition ended */
+.ended-banner{background:var(--ink);color:var(--bg);padding:10px 40px;font-size:12px;letter-spacing:0.08em;text-align:center;font-family:var(--font-display);font-size:14px;}
+
+/* No data */
+.empty{text-align:center;padding:80px 20px;color:var(--ink-3);}
+.empty h3{font-family:var(--font-display);font-size:28px;margin:0 0 8px;color:var(--ink);}
+
+/* View Container */
+.view{display:none;}
+.view.active{display:block;}
+
+@media(max-width:900px){
+  .page{padding:24px 20px 60px;} .nav{padding:14px 20px;}
+  .row-3{grid-template-columns:1fr;}
+  .page-title{font-size:40px;}
+  .hero-title{font-size:36px;}
+  .hero-stats{grid-template-columns:repeat(2,1fr);}
+  .hero-ctas{flex-direction:column;}
+  .cta-primary,.cta-secondary{width:100%;text-align:center;}
+  .lb-table th:nth-child(4),.lb-row td:nth-child(4){display:none;}
+}
+@media(max-width:560px){
+  .lb-table th,.lb-row td{padding:12px 6px!important;font-size:12px;}
+  .rank-num{font-size:24px!important;width:36px!important;}
+  .lb-table th:nth-child(7),.lb-row td:nth-child(7){display:none;}
+}
+  </style>
 </head>
 <body>
-  <div id="root"></div>
+<div id="root"></div>
 
-  <!-- Supabase (loads before React so sbClient is ready) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="config.js"></script>
-  <script src="supabase-client.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
 
-  <!-- React + Babel -->
-  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script>
+// ===================== CONFIG =====================
+window.SHEET_URL = "https://script.google.com/macros/s/AKfycbzXB3uIu-QrvDgw3oLKlK1l3DtZm6cU6OXpq9rMWvuYm8lnB4LcyLuvFoqudKqfYZBAog/exec";
+window.COMP_END  = new Date("2026-06-30T23:59:00+07:00");
 
-  <script src="tiers.js"></script>
-  <script src="scoring.js"></script>
-  <script src="data.js"></script>
-  <script type="text/babel" src="tweaks-panel.jsx"></script>
-  <script type="text/babel" src="shared.jsx"></script>
-  <script type="text/babel" src="login.jsx"></script>
-  <script type="text/babel" src="leaderboard.jsx"></script>
-  <script type="text/babel" src="scoring-panel.jsx"></script>
-  <script type="text/babel" src="performance.jsx"></script>
-  <script type="text/babel" src="dashboard.jsx"></script>
-  <script type="text/babel" src="profile.jsx"></script>
-  <script type="text/babel" src="trades.jsx"></script>
-  <script type="text/babel" src="app.jsx"></script>
+// Tier definitions
+window.TIERS = {
+  obsidian:  { label:"Obsidian",   cls:"obsidian",  accent:"#6B5B95", minScore:90 },
+  blackopal: { label:"Black Opal", cls:"blackopal", accent:"#4FB6E8", minScore:75 },
+  cobalt:    { label:"Cobalt",     cls:"cobalt",    accent:"#5A8FE0", minScore:60 },
+  redberyl:  { label:"Red Beryl",  cls:"redberyl",  accent:"#E8859B", minScore:45 },
+  pallasite: { label:"Pallasite",  cls:"pallasite", accent:"#C5D87E", minScore:30 },
+  diamond:   { label:"Diamond",    cls:"diamond",   accent:"#BFD9F0", minScore:0  },
+};
+
+function getTierKey(rankCode) {
+  const map = {
+    SUPREME:"obsidian", MARSHAL:"blackopal", GENERAL:"cobalt",
+    COLONEL:"redberyl", MAJOR:"pallasite", PRIVATE:"diamond",
+    OBSIDIAN:"obsidian", BLACKOPAL:"blackopal", COBALT:"cobalt",
+    REDBERYL:"redberyl", PALLASITE:"pallasite", DIAMOND:"diamond",
+    "BLACK OPAL":"blackopal", "RED BERYL":"redberyl",
+  };
+  const key = (rankCode || "").toUpperCase().trim();
+  return map[key] || "diamond";
+}
+</script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ─── Sparkline ───────────────────────────────────────────────
+function Sparkline({ data = [], width = 120, height = 32 }) {
+  if (!data || data.length < 2) {
+    return <svg width={width} height={height} className="spark">
+      <line x1={0} y1={height/2} x2={width} y2={height/2} stroke="var(--line)" strokeWidth="1"/>
+    </svg>;
+  }
+  const vals = data.map(d => typeof d === 'object' ? (d.profit ?? d.composite ?? 0) : d);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const range = max - min || 1;
+  const pts = vals.map((v, i) => [
+    (i / (vals.length - 1)) * width,
+    height - ((v - min) / range) * (height - 4) - 2
+  ]);
+  const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+  const fillD = `${d} L${pts[pts.length-1][0]},${height} L${pts[0][0]},${height} Z`;
+  const isGain = vals[vals.length-1] >= vals[0];
+  return (
+    <svg width={width} height={height} className={`spark ${isGain ? 'gain' : 'loss'}`} style={{ overflow:'visible' }}>
+      <path className="fill" d={fillD} />
+      <path className="line" d={d} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// ─── Avatar ──────────────────────────────────────────────────
+function Avatar({ name = "" }) {
+  const initials = name.trim().split(/[\s_-]/).slice(0,2).map(w=>w[0]||"").join("").toUpperCase() || "?";
+  return <span className="avatar">{initials}</span>;
+}
+
+// ─── Tier badge ──────────────────────────────────────────────
+function Tier({ tierKey }) {
+  const def = window.TIERS[tierKey] || window.TIERS.diamond;
+  return (
+    <span className={`tier ${def.cls}`}>
+      <span className="dot" />
+      {def.label}
+    </span>
+  );
+}
+
+// ─── Score cell ──────────────────────────────────────────────
+function ScoreCell({ composite, rankCode }) {
+  const color = composite >= 90 ? "var(--gain)" : composite >= 60 ? "var(--ink)" : "var(--ink-3)";
+  return (
+    <div style={{ display:"inline-flex", flexDirection:"column", alignItems:"flex-end", gap:4 }}>
+      <span className="metric-big tabular" style={{ fontSize:26, color }}>{composite.toFixed(1)}</span>
+      <span className="kicker" style={{ fontSize:9, opacity:0.65 }}>{rankCode}</span>
+    </div>
+  );
+}
+
+// ─── Podium card ─────────────────────────────────────────────
+function PodiumCard({ trader, medal }) {
+  const tierKey = getTierKey(trader.rank_code);
+  const tierDef = window.TIERS[tierKey] || window.TIERS.diamond;
+  const ring = tierDef.accent;
+  const labels = ["First", "Second", "Third"];
+  const isGain = trader.profit >= 0;
+  return (
+    <div className="card podium-card" style={{
+      borderColor: `color-mix(in oklab, ${ring} 35%, var(--line))`,
+      background: `linear-gradient(160deg, color-mix(in oklab, ${ring} 12%, var(--surface)), var(--surface) 60%)`
+    }}>
+      <div className="podium-label">{labels[medal-1]} Place</div>
+      <div className="podium-rank">#{medal}</div>
+      <Avatar name={trader.name} />
+      <div style={{ marginTop:10 }}>
+        <div className="podium-name">{trader.name}</div>
+        <div className="podium-meta">{trader.account_masked}</div>
+      </div>
+      <div style={{ marginTop:14, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <Tier tierKey={tierKey} />
+        <span style={{ color:ring, fontFamily:"var(--font-mono)", fontSize:11, letterSpacing:"0.04em" }}>
+          {trader.rank_title}
+        </span>
+      </div>
+      <div className="podium-score-row">
+        <div>
+          <div className="podium-composite">{trader.composite.toFixed(1)}</div>
+          <div className="podium-rank-name">Composite</div>
+        </div>
+        <div style={{ textAlign:"right" }}>
+          <div className="podium-return" style={{ color: isGain ? "var(--gain)" : "var(--loss)" }}>
+            {isGain ? "+" : "−"}{Math.abs(trader.profit).toFixed(2)}%
+          </div>
+          <div className="podium-rank-name">Return</div>
+        </div>
+      </div>
+      <div style={{ marginTop:14 }}>
+        <Sparkline data={trader.sparkline} width={260} height={40} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Countdown ───────────────────────────────────────────────
+function CountDown({ endDate }) {
+  const [left, setLeft] = useState(() => endDate - Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setLeft(endDate - Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [endDate]);
+  if (left <= 0) return <span className="countdown" style={{ color:"var(--loss)" }}>Competition ended</span>;
+  const d = Math.floor(left / 86400000);
+  const h = Math.floor((left % 86400000) / 3600000);
+  const m = Math.floor((left % 3600000) / 60000);
+  const s = Math.floor((left % 60000) / 1000);
+  return (
+    <div className="countdown">
+      <span className="kicker" style={{ display:"block", marginBottom:2 }}>Ends in</span>
+      <strong>{d}d {String(h).padStart(2,"0")}h {String(m).padStart(2,"0")}m {String(s).padStart(2,"0")}s</strong>
+    </div>
+  );
+}
+
+// ─── Skeleton ─────────────────────────────────────────────────
+function SkeletonRow() {
+  return (
+    <tr className="lb-row">
+      <td><div className="skel" style={{ width:40, height:36 }}/></td>
+      <td><div style={{ display:"flex", gap:12, alignItems:"center" }}>
+        <div className="skel" style={{ width:40, height:40, borderRadius:"50%" }}/>
+        <div><div className="skel" style={{ width:120, height:14, marginBottom:6 }}/><div className="skel" style={{ width:80, height:10 }}/></div>
+      </div></td>
+      <td><div className="skel" style={{ width:90, height:22 }}/></td>
+      <td><div className="skel" style={{ width:120, height:32 }}/></td>
+      <td style={{ textAlign:"right" }}><div className="skel" style={{ width:52, height:26, marginLeft:"auto" }}/></td>
+      <td style={{ textAlign:"right" }}><div className="skel" style={{ width:52, height:18, marginLeft:"auto" }}/></td>
+      <td style={{ textAlign:"right" }}><div className="skel" style={{ width:40, height:14, marginLeft:"auto" }}/></td>
+      <td style={{ textAlign:"right", paddingRight:28 }}><div className="skel" style={{ width:32, height:14, marginLeft:"auto" }}/></td>
+    </tr>
+  );
+}
+
+const TH = { textAlign:"left", fontWeight:500, fontSize:11, letterSpacing:"0.12em", textTransform:"uppercase", color:"var(--ink-3)", padding:"16px 12px" };
+
+// ─── Homepage ─────────────────────────────────────────────────
+function HomePage({ participantCount, onViewLeaderboard }) {
+  return (
+    <div className="page">
+      <div className="hero-section">
+        <div className="hero-content">
+          <div className="hero-header">
+            <h1 className="hero-title">Codex Trading Journal League</h1>
+            <p className="hero-subtitle">Trade globally. Compete fairly. Win prizes.</p>
+          </div>
+
+          <div className="hero-stats">
+            <div className="stat-card">
+              <div className="stat-value">$50,000</div>
+              <div className="stat-label">Prize Pool</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">{participantCount}</div>
+              <div className="stat-label">Participants</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">15-30 Jun</div>
+              <div className="stat-label">Competition Period</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">Live</div>
+              <div className="stat-label">Real-time Rankings</div>
+            </div>
+          </div>
+
+          <div className="hero-ctas">
+            <button className="cta-primary" onClick={() => window.open('https://github.com/PandoraActor-ops/ledger-trading-journal', '_blank')}>
+              Download EA
+            </button>
+            <button className="cta-secondary" onClick={onViewLeaderboard}>
+              View Leaderboard →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 40, padding: '32px', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-lg)' }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 24, marginBottom: 16 }}>How It Works</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20 }}>
+          <div>
+            <div style={{ fontSize: 12, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Step 1</div>
+            <div style={{ fontSize: 14, fontWeight: 500 }}>Attach EA</div>
+            <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4 }}>Download and attach the Codex EA to your MT5 chart</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Step 2</div>
+            <div style={{ fontSize: 14, fontWeight: 500 }}>Configure WebRequest</div>
+            <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4 }}>Allow WebRequest for Google Apps Script in MT5 settings</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Step 3</div>
+            <div style={{ fontSize: 14, fontWeight: 500 }}>Trade & Compete</div>
+            <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4 }}>Your stats update every 12 hours on the leaderboard</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Leaderboard page ─────────────────────────────────────────
+function LeaderboardPage({ data, loading, error, lastSync, onRefresh }) {
+  const traders = data?.participants || [];
+  const top3 = traders.slice(0, 3);
+  const rest = traders;
+  const ended = data?.status === "ended";
+
+  return (
+    <div className="page" style={{ paddingTop: ended ? 16 : 32 }}>
+      <div className="page-head">
+        <div>
+          <div className="kicker">Codex Trading Journal League · Global Standings</div>
+          <h1 className="page-title"><em>The Top Ten.</em></h1>
+          <p className="page-subtitle">
+            Ranked by 4-dimensional composite score — Risk-Adjusted Performance, Consistency,
+            Capital Preservation, Execution Quality. Updates every 12 hours via TradeGeneral EA.
+          </p>
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:12 }}>
+          <CountDown endDate={window.COMP_END} />
+          <button onClick={onRefresh} style={{ fontSize:12, color:"var(--ink-3)", padding:"6px 14px", border:"1px solid var(--line)", borderRadius:999, background:"var(--surface)", cursor:"pointer", letterSpacing:"0.02em" }}>
+            ↻ Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* Top 3 podium */}
+      {loading && !data ? (
+        <div className="row-3" style={{ marginBottom:28 }}>
+          {[1,2,3].map(i => <div key={i} className="card" style={{ height:260, background:"var(--surface-2)" }}><div className="skel" style={{ width:"100%", height:"100%" }}/></div>)}
+        </div>
+      ) : top3.length >= 3 ? (
+        <div className="row-3" style={{ marginBottom:28 }}>
+          {top3.map((t, i) => <PodiumCard key={t.account_raw} trader={t} medal={i+1} />)}
+        </div>
+      ) : null}
+
+      {/* Table */}
+      <div className="card" style={{ padding:0, overflow:"hidden" }}>
+        <table className="lb-table">
+          <thead>
+            <tr style={{ borderBottom:"1px solid var(--line)" }}>
+              <th style={TH}>#</th>
+              <th style={TH}>Trader</th>
+              <th style={TH}>Tier</th>
+              <th style={TH}>14-day curve</th>
+              <th style={{ ...TH, textAlign:"right" }}>Score</th>
+              <th style={{ ...TH, textAlign:"right" }}>Return</th>
+              <th style={{ ...TH, textAlign:"right" }}>Win rate</th>
+              <th style={{ ...TH, textAlign:"right", paddingRight:28 }}>Trades</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading && !data ? (
+              [1,2,3,4,5].map(i => <SkeletonRow key={i} />)
+            ) : error ? (
+              <tr><td colSpan={8} style={{ textAlign:"center", padding:"40px 20px", color:"var(--ink-3)" }}>
+                Unable to load data. <button onClick={onRefresh} style={{ color:"var(--gain)", cursor:"pointer", fontSize:13 }}>Try again</button>
+              </td></tr>
+            ) : traders.length === 0 ? (
+              <tr><td colSpan={8} className="empty">
+                <h3>No participants yet.</h3>
+                <p>Attach the Codex Trading Journal EA to start sending scores.</p>
+              </td></tr>
+            ) : (
+              rest.map((t, i) => {
+                const tierKey = getTierKey(t.rank_code);
+                const isGain = t.profit >= 0;
+                return (
+                  <tr key={t.account_raw} className={`lb-row ${i < 3 ? `podium-${i+1}` : ""}`}>
+                    <td className="rank-cell" style={{ paddingLeft:28 }}>
+                      <span className={`rank-num ${i > 2 ? "muted" : ""}`}>
+                        {String(i+1).padStart(2,"0")}
+                      </span>
+                    </td>
+                    <td className="user-cell">
+                      <div className="user-block">
+                        <Avatar name={t.name} />
+                        <div>
+                          <div className="user-name">{t.name}</div>
+                          <div className="user-meta">
+                            <span className="mono">{t.account_masked}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td><Tier tierKey={tierKey} /></td>
+                    <td style={{ width:140 }}>
+                      <Sparkline data={t.sparkline} width={120} height={32} />
+                    </td>
+                    <td style={{ textAlign:"right" }} className="num">
+                      <ScoreCell composite={t.composite} rankCode={t.rank_code} />
+                    </td>
+                    <td style={{ textAlign:"right" }} className="tabular num">
+                      <div className="metric-big" style={{ fontSize:18, color: isGain ? "var(--gain)" : "var(--loss)" }}>
+                        {isGain ? "+" : "−"}{Math.abs(t.profit).toFixed(2)}%
+                      </div>
+                    </td>
+                    <td style={{ textAlign:"right" }} className="tabular num">{t.winrate.toFixed(1)}%</td>
+                    <td style={{ textAlign:"right", paddingRight:28 }} className="tabular">{t.trades}</td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{ marginTop:16, display:"flex", justifyContent:"space-between", alignItems:"center", color:"var(--ink-3)", fontSize:12 }}>
+        <span>{traders.length} participant{traders.length !== 1 ? "s" : ""}</span>
+        {lastSync && <span className="mono">Last sync · {new Date(lastSync).toLocaleTimeString("th-TH")}</span>}
+      </div>
+    </div>
+  );
+}
+
+// ─── Root App ─────────────────────────────────────────────────
+function App() {
+  const [view, setView]   = useState("home");
+  const [data, setData]   = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [lastSync, setLastSync] = useState(null);
+
+  const fetchData = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    const cbName = "lb_cb_" + Date.now();
+    const tag = document.createElement("script");
+    const timer = setTimeout(() => {
+      setLoading(false);
+      setError("Timeout — Apps Script ไม่ตอบสนอง");
+      delete window[cbName];
+      if (tag.parentNode) tag.parentNode.removeChild(tag);
+    }, 12000);
+    window[cbName] = (json) => {
+      clearTimeout(timer);
+      setData(json);
+      setLastSync(json.updated || new Date().toISOString());
+      setLoading(false);
+      delete window[cbName];
+      if (tag.parentNode) tag.parentNode.removeChild(tag);
+    };
+    tag.src = window.SHEET_URL + "?action=leaderboard&callback=" + cbName;
+    tag.onerror = () => {
+      clearTimeout(timer);
+      setLoading(false);
+      setError("โหลดไม่ได้ — ตรวจสอบ Apps Script deployment");
+      delete window[cbName];
+    };
+    document.body.appendChild(tag);
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+    const id = setInterval(fetchData, 60_000);
+    return () => clearInterval(id);
+  }, [fetchData]);
+
+  const ended = data?.status === "ended";
+  const participantCount = data?.participants?.length || 0;
+
+  return (
+    <div className="app">
+      {ended && (
+        <div className="ended-banner">
+          🏆 Codex Trading Journal League — Competition Ended · Final Standings Locked
+        </div>
+      )}
+      <nav className="nav">
+        <div className="nav-brand" onClick={() => setView("home")}>
+          <span className="glyph">C</span>
+          Codex
+        </div>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button className={`nav-tab ${view === 'home' ? 'active' : ''}`} onClick={() => setView('home')}>
+            Home
+          </button>
+          <button className={`nav-tab ${view === 'leaderboard' ? 'active' : ''}`} onClick={() => setView('leaderboard')}>
+            Leaderboard
+          </button>
+        </div>
+        <div className="nav-right">
+          <span className="live-pill">
+            <span className="live-dot" />
+            {ended ? "Ended" : "Live"}
+          </span>
+        </div>
+      </nav>
+
+      {view === "home" && (
+        <HomePage participantCount={participantCount} onViewLeaderboard={() => setView('leaderboard')} />
+      )}
+
+      {view === "leaderboard" && (
+        <LeaderboardPage
+          data={data}
+          loading={loading}
+          error={error}
+          lastSync={lastSync}
+          onRefresh={fetchData}
+        />
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
 </body>
 </html>
