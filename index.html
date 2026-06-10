@@ -458,7 +458,16 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
 .eap-equity-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px;gap:12px;flex-wrap:wrap;}
 .eap-equity-title{font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--ink-2);}
 .eap-equity-info{font-family:var(--font-mono);font-size:12px;color:var(--ink-3);}
-.eap-chart-box{height:220px;width:100%;}
+.eap-chart-box{height:260px;width:100%;}
+.eqc{width:100%;height:100%;display:block;font-family:var(--font-mono);}
+.eqc-grid{stroke:var(--line-2);stroke-width:1;}
+.eqc-ylab,.eqc-xlab{fill:var(--ink-3);font-size:11px;}
+.eqc-area{opacity:.13;}
+.eqc.up .eqc-area{fill:var(--neon);} .eqc.dn .eqc-area{fill:var(--loss);}
+.eqc-line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round;}
+.eqc.up .eqc-line{stroke:var(--neon);} .eqc.dn .eqc-line{stroke:var(--loss);}
+.eqc.up .eqc-dot{fill:var(--neon);} .eqc.dn .eqc-dot{fill:var(--loss);}
+.eqc-dot{filter:drop-shadow(0 0 5px var(--neon-glow));}
 .eap-comp-block{display:grid;grid-template-columns:320px 1fr;gap:40px;align-items:center;}
 .eap-comp-left{display:flex;align-items:center;gap:24px;border-right:1px solid var(--line);padding-right:40px;}
 .eap-huge-box{display:flex;flex-direction:column;}
@@ -1099,6 +1108,42 @@ function areaChart(vals){
   return `<svg class="bigchart ${up?"up":"dn"}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${g}<path class="area" d="${area}"/><path class="ln" d="${line}" vector-effect="non-scaling-stroke"/></svg>`;
 }
 
+// Equity curve with $ Y-axis + date X-axis, reconstructed from sparkline (% return) + current balance.
+function equityChart(t){
+  const W=1000,H=260, pl=58,pr=20,ptp=16,pb=30;
+  const plotW=W-pl-pr, plotH=H-ptp-pb;
+  const spark=(t.sparkline||[]).filter(s=>s&&typeof s==="object");
+  const curP=t.profit||0, bal=t.balance||0;
+  let denom=1+curP/100; if(Math.abs(denom)<0.05) denom=1;
+  const startBal=bal/denom;
+  let pts=spark.map(s=>({x:Date.parse(s.ts)||0, v:startBal*(1+(s.profit||0)/100)})).filter(p=>!isNaN(p.v));
+  if(pts.length<2){ const v=bal||startBal||0; pts=[{x:0,v},{x:1,v}]; }
+  const xs=pts.map(p=>p.x), vs=pts.map(p=>p.v);
+  let xmin=Math.min(...xs), xmax=Math.max(...xs); if(xmax===xmin) xmax=xmin+1;
+  let vmin=Math.min(...vs), vmax=Math.max(...vs);
+  const padv=(vmax-vmin)*0.12 || Math.abs(vmax)*0.05 || 1; vmin-=padv; vmax+=padv;
+  const X=x=>pl+(x-xmin)/(xmax-xmin)*plotW;
+  const Y=v=>ptp+(1-(v-vmin)/(vmax-vmin))*plotH;
+  const span=vmax-vmin, dec=span<5?2:(span<50?1:0);
+  const fm=v=>{const a=Math.abs(v); return a>=10000 ? "$"+(v/1000).toFixed(0)+"k" : (a>=1000 ? "$"+(v/1000).toFixed(1)+"k" : "$"+v.toFixed(dec));};
+  const fmtD=x=>{const d=new Date(x); return isNaN(d.getTime())?"":d.toLocaleDateString("en",{month:"short",day:"numeric"});};
+  let grid="",ylab="";
+  for(let i=0;i<=4;i++){ const v=vmin+(vmax-vmin)*i/4, y=Y(v);
+    grid+=`<line class="eqc-grid" x1="${pl}" y1="${y.toFixed(1)}" x2="${W-pr}" y2="${y.toFixed(1)}"/>`;
+    ylab+=`<text class="eqc-ylab" x="${pl-8}" y="${(y+3.5).toFixed(1)}" text-anchor="end">${fm(v)}</text>`; }
+  let xlab=""; const M=Math.min(5,pts.length);
+  for(let i=0;i<M;i++){ const idx=Math.round(i/(Math.max(1,M-1))*(pts.length-1)), p=pts[idx], x=X(p.x);
+    const anc=i===0?"start":(i===M-1?"end":"middle");
+    xlab+=`<text class="eqc-xlab" x="${x.toFixed(1)}" y="${H-10}" text-anchor="${anc}">${fmtD(p.x)}</text>`; }
+  const d=pts.map((p,i)=>`${i?"L":"M"}${X(p.x).toFixed(1)},${Y(p.v).toFixed(1)}`).join(" ");
+  const area=`${d} L${X(pts[pts.length-1].x).toFixed(1)},${(H-pb).toFixed(1)} L${X(pts[0].x).toFixed(1)},${(H-pb).toFixed(1)} Z`;
+  const up=pts[pts.length-1].v>=pts[0].v, last=pts[pts.length-1];
+  return `<svg class="eqc ${up?"up":"dn"}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">`+
+    grid+ylab+xlab+
+    `<path class="eqc-area" d="${area}"/><path class="eqc-line" d="${d}"/>`+
+    `<circle class="eqc-dot" cx="${X(last.x).toFixed(1)}" cy="${Y(last.v).toFixed(1)}" r="3.5"/></svg>`;
+}
+
 function buildProfile(t){
   const tk = getTierKey(t.rank_code);
   const comp = t.composite || 0;
@@ -1164,7 +1209,7 @@ function buildProfile(t){
         <div class="eap-equity-title">Equity Curve</div>
         <div class="eap-equity-info">Balance $${(t.balance || 0).toFixed(2)} · Equity $${(t.equity || 0).toFixed(2)}</div>
       </div>
-      <div class="eap-chart-box">${areaChart((t.sparkline || []).map(s => (typeof s === "object" ? (s.profit ?? 0) : s)))}</div>
+      <div class="eap-chart-box">${equityChart(t)}</div>
     </div>
     <div class="eap-card eap-comp-block">
       <div class="eap-comp-left">
