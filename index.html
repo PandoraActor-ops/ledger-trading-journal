@@ -338,6 +338,20 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
 .socials a{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-2);transition:all .25s;}
 .socials a:hover{color:var(--neon);border-color:rgba(31,224,122,.4);transform:translateY(-2px);}
 
+/* ---------- CUSTOM CURSOR (desktop, fine pointer only) ---------- */
+.cursor{position:fixed;top:0;left:0;z-index:10000;pointer-events:none;mix-blend-mode:difference;
+  opacity:0;transition:opacity .3s ease;will-change:transform;display:none;}
+.cursor.show{opacity:1;}
+.cursor-ring{display:block;width:20px;height:20px;margin:-10px 0 0 -10px;border:2px solid #fff;
+  border-radius:50%;transition:transform .26s ease;}
+.cursor.hover .cursor-ring{transform:scale(2.4);}
+.cursor.down .cursor-ring{transform:scale(1.5);}
+@media (hover:hover) and (pointer:fine){
+  .cursor{display:block;}
+  html.cursor-on, html.cursor-on *{cursor:none !important;}
+}
+@media (prefers-reduced-motion:reduce){ .cursor{display:none !important;} }
+
 /* ---------- LANGUAGE SWITCHER ---------- */
 .lang{position:relative;}
 .lang-btn{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--ink-2);
@@ -419,6 +433,8 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
 </style>
 </head>
 <body>
+
+<div class="cursor" id="cursor" aria-hidden="true"><span class="cursor-ring"></span></div>
 
 <div class="bg-fx">
   <div class="orb a"></div>
@@ -1077,6 +1093,31 @@ window.addEventListener("hashchange",route);
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape" && !document.getElementById("profile-view").hidden) backToBoard();
 });
+
+// ---------- custom cursor ----------
+(function(){
+  const fine = window.matchMedia("(hover:hover) and (pointer:fine)").matches;
+  const reduce = window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+  const cur = document.getElementById("cursor");
+  if(!fine || reduce || !cur) return;
+  document.documentElement.classList.add("cursor-on");
+  const SEL = "a,button,[role=button],input,select,textarea,label,.lb-clickable,.pcard,.lang-btn,.lang-menu button,[data-acc]";
+  let tx=innerWidth/2, ty=innerHeight/2, cx=tx, cy=ty, shown=false;
+  window.addEventListener("mousemove",e=>{
+    tx=e.clientX; ty=e.clientY;
+    if(!shown){ shown=true; cur.classList.add("show"); }
+    cur.classList.toggle("hover", !!(e.target.closest && e.target.closest(SEL)));
+  },{passive:true});
+  document.addEventListener("mouseleave",()=>cur.classList.remove("show"));
+  document.addEventListener("mouseenter",()=>{ if(shown) cur.classList.add("show"); });
+  window.addEventListener("mousedown",()=>cur.classList.add("down"));
+  window.addEventListener("mouseup",()=>cur.classList.remove("down"));
+  (function loop(){
+    cx+=(tx-cx)*0.18; cy+=(ty-cy)*0.18;
+    cur.style.transform=`translate3d(${cx.toFixed(2)}px,${cy.toFixed(2)}px,0)`;
+    requestAnimationFrame(loop);
+  })();
+})();
 
 // ---------- boot ----------
 applyI18n();
