@@ -432,6 +432,55 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
 .lb-table tbody tr.lb-clickable{position:relative;}
 .lb-table tbody tr.lb-clickable:hover{background:var(--glass-2);box-shadow:inset 2px 0 0 var(--neon);}
 
+/* ---------- EA-STYLED PROFILE (eap) ---------- */
+.eap-profile{display:flex;flex-direction:column;gap:20px;font-family:var(--font-sans);color:var(--ink);width:100%;max-width:1080px;margin:0 auto;}
+.eap-card{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-lg);padding:24px;position:relative;overflow:hidden;}
+.eap-hero{display:grid;grid-template-columns:1fr auto;gap:32px;background:radial-gradient(circle at top right,var(--neon-tint),transparent),var(--bg-2);padding:40px;align-items:center;}
+.eap-hero-left{display:flex;flex-direction:column;}
+.eap-name{font-family:var(--font-display);font-size:clamp(28px,5vw,42px);font-weight:700;line-height:1.1;margin-bottom:12px;letter-spacing:-.02em;}
+.eap-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+.eap-pill{background:var(--glass-2);border:1px solid var(--line-2);padding:4px 12px;border-radius:100px;font-family:var(--font-mono);font-size:11px;color:var(--ink-2);white-space:nowrap;}
+.eap-tier-big{font-family:var(--font-display);font-size:44px;font-weight:700;color:var(--neon);text-transform:uppercase;letter-spacing:-1px;filter:drop-shadow(0 0 15px var(--neon-glow));margin:8px 0;}
+.eap-prog-wrap{max-width:320px;margin-top:20px;}
+.eap-prog-text{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11px;color:var(--ink-3);margin-bottom:6px;}
+.eap-prog-track{height:6px;background:var(--line);border-radius:10px;overflow:hidden;}
+.eap-prog-fill{height:100%;background:var(--neon);box-shadow:0 0 10px var(--neon-glow);transition:width .6s ease;}
+.eap-hero-right{display:flex;align-items:center;gap:24px;}
+.eap-gauge-box{width:120px;height:120px;flex:0 0 auto;}
+.eap-comp-val-box{text-align:right;}
+.eap-comp-num{font-family:var(--font-display);font-size:30px;font-weight:600;color:var(--ink);}
+.eap-comp-lbl{font-family:var(--font-mono);font-size:11px;color:var(--ink-3);letter-spacing:1px;}
+.eap-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+.eap-stat-card{display:flex;flex-direction:column;gap:6px;}
+.eap-stat-lbl{font-family:var(--font-mono);font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:1px;}
+.eap-stat-val{font-family:var(--font-display);font-size:28px;font-weight:600;}
+.eap-stat-sub{font-family:var(--font-mono);font-size:11px;color:var(--ink-3);}
+.eap-equity-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px;gap:12px;flex-wrap:wrap;}
+.eap-equity-title{font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--ink-2);}
+.eap-equity-info{font-family:var(--font-mono);font-size:12px;color:var(--ink-3);}
+.eap-chart-box{height:220px;width:100%;}
+.eap-comp-block{display:grid;grid-template-columns:320px 1fr;gap:40px;align-items:center;}
+.eap-comp-left{display:flex;align-items:center;gap:24px;border-right:1px solid var(--line);padding-right:40px;}
+.eap-huge-box{display:flex;flex-direction:column;}
+.eap-huge-num{font-family:var(--font-display);font-size:52px;font-weight:700;line-height:1;}
+.eap-huge-tier{font-family:var(--font-sans);font-size:18px;color:var(--ink-2);margin-top:4px;}
+.eap-comp-right{display:grid;grid-template-columns:200px 1fr;gap:32px;align-items:center;}
+.eap-radar-box{width:200px;height:200px;flex:0 0 auto;}
+.eap-dims{display:flex;flex-direction:column;gap:14px;}
+.eap-dim{display:flex;flex-direction:column;gap:4px;}
+.eap-dim-head{display:flex;justify-content:space-between;font-size:13px;}
+.eap-dim-name{color:var(--ink-2);}
+.eap-dim-w{font-family:var(--font-mono);font-size:10px;color:var(--ink-3);margin-left:6px;}
+.eap-dim-bar-box{display:flex;align-items:center;gap:12px;}
+.eap-dim-track{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden;}
+.eap-dim-fill{height:100%;background:var(--neon);border-radius:3px;opacity:.85;}
+.eap-dim-score{font-family:var(--font-mono);font-size:12px;color:var(--neon);width:24px;text-align:right;}
+.eap-footer{font-family:var(--font-mono);font-size:11px;color:var(--ink-3);text-align:center;padding:20px 0;border-top:1px solid var(--line-2);}
+.eap-gauge-box svg,.eap-radar-box svg,.eap-chart-box svg{display:block;width:100%;height:100%;}
+@media (max-width:1000px){.eap-comp-block{grid-template-columns:1fr;}.eap-comp-left{border-right:none;padding-right:0;border-bottom:1px solid var(--line);padding-bottom:24px;}}
+@media (max-width:800px){.eap-stats{grid-template-columns:repeat(2,1fr);}.eap-hero{grid-template-columns:1fr;padding:32px;}.eap-comp-right{grid-template-columns:1fr;justify-items:center;}}
+@media (max-width:500px){.eap-stats{grid-template-columns:1fr;}}
+
 /* ---------- PROFILE VIEW ---------- */
 .pv{position:fixed;inset:0;z-index:100;background:var(--bg);overflow-y:auto;overscroll-behavior:contain;}
 .pv[hidden]{display:none;}
@@ -1051,70 +1100,98 @@ function areaChart(vals){
 }
 
 function buildProfile(t){
-  const tk=getTierKey(t.rank_code), up=(t.profit||0)>=0;
-  const dims=[
-    ["Risk-Adjusted Performance","D1 · weight 35%", t.d1||0],
-    ["Consistency & Discipline","D2 · weight 25%", t.d2||0],
-    ["Capital Preservation","D3 · weight 25%", t.d3||0],
-    ["Execution Quality","D4 · weight 15%", t.d4||0],
+  const tk = getTierKey(t.rank_code);
+  const comp = t.composite || 0;
+  const wins = Math.round(((t.winrate || 0) / 100) * (t.trades || 0));
+  const losses = (t.trades || 0) - wins;
+  const profColor = (t.profit || 0) >= 0 ? 'var(--neon)' : 'var(--loss)';
+  const tr = [{l:"Diamond",v:0},{l:"Pallasite",v:30},{l:"Red Beryl",v:45},{l:"Cobalt",v:60},{l:"Black Opal",v:75},{l:"Obsidian",v:90}];
+  let cIdx = 0;
+  tr.forEach((x, i) => { if(comp >= x.v) cIdx = i; });
+  const cT = tr[cIdx], nT = tr[cIdx+1];
+  let pP = 100, pS = "MAX";
+  if(nT){ pP = Math.max(0, Math.min(100, (comp - cT.v) / (nT.v - cT.v) * 100)); pS = `→ ${nT.l} ${pP.toFixed(0)}%`; }
+  const dims = [
+    {n:"Risk-Adjusted Performance",w:"35%",v:t.d1||0},
+    {n:"Consistency & Discipline",w:"25%",v:t.d2||0},
+    {n:"Capital Preservation",w:"25%",v:t.d3||0},
+    {n:"Execution Quality",w:"15%",v:t.d4||0}
   ];
-  const dimRows=dims.map(d=>`<div class="dim"><div class="dlab">${d[0]}<b>${d[1]}</b></div><div class="bar"><i style="width:${Math.max(0,Math.min(100,d[2]))}%"></i></div><div class="dval">${Math.round(d[2])}</div></div>`).join("");
-  const comp=(t.sparkline||[]).map(s=>typeof s==="object"?(s.composite??0):s);
-  const prof=(t.sparkline||[]).map(s=>typeof s==="object"?(s.profit??0):s);
-  const stat=(k,v,cls="")=>`<div class="s"><div class="k">${k}</div><div class="v ${cls}">${v}</div></div>`;
-  return `
-  <div class="pv-hero">
-    <div class="pv-id">
-      <span class="pv-av">${esc(initials(t.name))}</span>
-      <div>
-        <div class="pv-name">${esc(t.name)}</div>
-        <div class="pv-sub">
-          <span class="mono">${esc(t.account_masked)}</span>
+  return `<div class="eap-profile">
+    <div class="eap-card eap-hero">
+      <div class="eap-hero-left">
+        <div class="eap-name">${esc(t.name)}</div>
+        <div class="eap-meta">
+          <span class="eap-pill">${esc(t.account_masked)}</span>
+          <span class="eap-pill">Rank #${t.rank || "—"} of ${LB.length}</span>
           <span class="tier ${TIERS[tk].cls}"><span class="td"></span>${esc(TIERS[tk].label)}</span>
-          <span class="pv-rankpill">Rank #${t.rank||"—"} of ${LB.length}</span>
-          ${t.rank_title?`<span>${esc(t.rank_title)}</span>`:""}
+        </div>
+        <div class="eap-tier-big">${esc(TIERS[tk].label)}</div>
+        <div class="eap-prog-wrap">
+          <div class="eap-prog-text"><span>${pS}</span></div>
+          <div class="eap-prog-track"><div class="eap-prog-fill" style="width:${pP}%"></div></div>
+        </div>
+      </div>
+      <div class="eap-hero-right">
+        <div class="eap-gauge-box">${gaugeRing(comp)}</div>
+        <div class="eap-comp-val-box">
+          <div class="eap-comp-num">${comp.toFixed(1)} /100</div>
+          <div class="eap-comp-lbl">COMPOSITE</div>
         </div>
       </div>
     </div>
-    <div class="gauge">
-      ${gaugeRing(t.composite)}
-      <div><div class="lab">Composite</div><div class="val">${(t.composite||0).toFixed(1)}<span style="font-size:14px;color:var(--ink-3);font-weight:400">/100</span></div></div>
-    </div>
-  </div>
-
-  <div class="statg">
-    ${stat("Return",(up?"+":"−")+Math.abs(t.profit||0).toFixed(2)+"%",up?"up":"dn")}
-    ${stat("Win rate",(t.winrate||0).toFixed(1)+"%")}
-    ${stat("Profit Factor",(t.pf||0).toFixed(2)+"×")}
-    ${stat("Max Drawdown",(t.maxdd||0).toFixed(2))}
-    ${stat("Trades",t.trades||0)}
-    ${stat("Balance","$"+(t.balance||0).toFixed(2))}
-    ${stat("Equity","$"+(t.equity||0).toFixed(2))}
-    ${stat("Tier",TIERS[tk].label)}
-  </div>
-
-  <div class="pv-grid2">
-    <div class="pv-card">
-      <h3>Composite Breakdown</h3>
-      <p class="hint">Weighted across 4 dimensions · each scored /100</p>
-      <div style="display:flex;gap:22px;align-items:center;flex-wrap:wrap">
-        <div style="flex:0 0 auto;margin:0 auto">${radar([t.d1||0,t.d2||0,t.d3||0,t.d4||0])}</div>
-        <div style="flex:1;min-width:240px">${dimRows}</div>
+    <div class="eap-stats">
+      <div class="eap-card eap-stat-card">
+        <div class="eap-stat-lbl">Net Return</div>
+        <div class="eap-stat-val" style="color:${profColor}">${(t.profit||0) >= 0 ? '+' : ''}${(t.profit || 0).toFixed(2)}%</div>
+      </div>
+      <div class="eap-card eap-stat-card">
+        <div class="eap-stat-lbl">Win Rate</div>
+        <div class="eap-stat-val">${(t.winrate || 0).toFixed(1)}%</div>
+        <div class="eap-stat-sub">${wins}W / ${losses}L</div>
+      </div>
+      <div class="eap-card eap-stat-card">
+        <div class="eap-stat-lbl">Profit Factor</div>
+        <div class="eap-stat-val">${(t.pf || 0).toFixed(2)}×</div>
+      </div>
+      <div class="eap-card eap-stat-card">
+        <div class="eap-stat-lbl">Max Drawdown</div>
+        <div class="eap-stat-val">${(t.maxdd || 0).toFixed(2)}</div>
       </div>
     </div>
-    <div class="pv-card">
-      <h3>Composite over time</h3>
-      <p class="hint">Score trend during the competition</p>
-      ${areaChart(comp)}
-      <h3 style="margin-top:22px">Return over time</h3>
-      <p class="hint">Cumulative return %</p>
-      ${areaChart(prof)}
+    <div class="eap-card eap-equity">
+      <div class="eap-equity-head">
+        <div class="eap-equity-title">Equity Curve</div>
+        <div class="eap-equity-info">Balance $${(t.balance || 0).toFixed(2)} · Equity $${(t.equity || 0).toFixed(2)}</div>
+      </div>
+      <div class="eap-chart-box">${areaChart((t.sparkline || []).map(s => (typeof s === "object" ? (s.profit ?? 0) : s)))}</div>
     </div>
-  </div>
-
-  <p style="text-align:center;color:var(--ink-3);font-family:var(--font-mono);font-size:12px;margin-top:10px">
-    Updates every 12h via Codex EA${t.last_update?` · Last update ${new Date(t.last_update).toLocaleString()}`:""}
-  </p>`;
+    <div class="eap-card eap-comp-block">
+      <div class="eap-comp-left">
+        <div class="eap-huge-box">
+          <div class="eap-huge-num">${comp.toFixed(1)}/100</div>
+          <div class="eap-huge-tier">${esc(TIERS[tk].label)}</div>
+        </div>
+        <div class="eap-gauge-box" style="width:100px;height:100px">${gaugeRing(comp)}</div>
+      </div>
+      <div class="eap-comp-right">
+        <div class="eap-radar-box">${radar([t.d1||0, t.d2||0, t.d3||0, t.d4||0])}</div>
+        <div class="eap-dims">
+          ${dims.map(d => `
+            <div class="eap-dim">
+              <div class="eap-dim-head"><span class="eap-dim-name">${d.n}<small class="eap-dim-w">${d.w}</small></span></div>
+              <div class="eap-dim-bar-box">
+                <div class="eap-dim-track"><div class="eap-dim-fill" style="width:${Math.max(0,Math.min(100,d.v))}%"></div></div>
+                <div class="eap-dim-score">${Math.round(d.v)}</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="eap-footer">
+      Updates every 12h via Codex EA${t.last_update ? ' · Last update ' + new Date(t.last_update).toLocaleString() : ''}
+    </div>
+  </div>`;
 }
 
 function openProfile(acc){
