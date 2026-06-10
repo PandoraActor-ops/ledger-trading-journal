@@ -337,6 +337,71 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
 .socials{display:flex;gap:8px;}
 .socials a{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-2);transition:all .25s;}
 .socials a:hover{color:var(--neon);border-color:rgba(31,224,122,.4);transform:translateY(-2px);}
+
+/* ---------- LEADERBOARD CLICKABLE ---------- */
+.lb-clickable{cursor:pointer;}
+.pcard{cursor:pointer;}
+.lb-table tbody tr.lb-clickable{position:relative;}
+.lb-table tbody tr.lb-clickable:hover{background:var(--glass-2);box-shadow:inset 2px 0 0 var(--neon);}
+
+/* ---------- PROFILE VIEW ---------- */
+.pv{position:fixed;inset:0;z-index:100;background:var(--bg);overflow-y:auto;overscroll-behavior:contain;}
+.pv[hidden]{display:none;}
+.pv::before{content:"";position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(80% 50% at 50% -10%,rgba(31,224,122,.12),transparent 60%);}
+.pv-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;
+  height:64px;padding:0 28px;backdrop-filter:blur(14px);background:rgba(5,7,10,.72);border-bottom:1px solid var(--line-2);}
+.pv-back{display:inline-flex;align-items:center;gap:9px;font-size:14px;color:var(--ink-2);padding:9px 16px;
+  border-radius:999px;border:1px solid var(--line);background:var(--glass);transition:all .2s;}
+.pv-back:hover{color:var(--neon);border-color:rgba(31,224,122,.4);}
+.pv-wrap{position:relative;max-width:1080px;margin:0 auto;padding:34px 28px 90px;}
+
+.pv-hero{display:grid;grid-template-columns:1.3fr .7fr;gap:24px;align-items:center;border:1px solid var(--line);
+  border-radius:var(--r-xl);padding:26px;background:linear-gradient(160deg,var(--glass-2),var(--glass));margin-bottom:18px;}
+@media(max-width:760px){.pv-hero{grid-template-columns:1fr;}}
+.pv-id{display:flex;gap:18px;align-items:center;}
+.pv-av{width:64px;height:64px;border-radius:18px;display:grid;place-items:center;font-family:var(--font-display);
+  font-weight:700;font-size:24px;color:var(--neon);background:var(--neon-tint);border:1px solid rgba(31,224,122,.3);flex:0 0 auto;}
+.pv-name{font-family:var(--font-display);font-weight:600;font-size:26px;letter-spacing:-.02em;}
+.pv-sub{font-family:var(--font-mono);font-size:12.5px;color:var(--ink-3);margin-top:7px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.pv-rankpill{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;background:var(--glass);border:1px solid var(--line);color:var(--ink-2);font-size:12px;}
+.gauge{display:flex;align-items:center;gap:18px;justify-content:flex-end;}
+@media(max-width:760px){.gauge{justify-content:flex-start;}}
+.gauge .lab{font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);}
+.gauge .val{font-family:var(--font-display);font-weight:700;font-size:30px;color:var(--neon);line-height:1;margin-top:4px;}
+
+.statg{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+@media(max-width:860px){.statg{grid-template-columns:repeat(2,1fr);}}
+.statg .s{border:1px solid var(--line);border-radius:var(--r);padding:16px;background:var(--glass);}
+.statg .s .k{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);}
+.statg .s .v{font-family:var(--font-display);font-weight:600;font-size:21px;margin-top:8px;white-space:nowrap;}
+.statg .s .v.up{color:var(--neon);} .statg .s .v.dn{color:var(--loss);}
+
+.pv-grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:14px;}
+@media(max-width:860px){.pv-grid2{grid-template-columns:1fr;}}
+.pv-card{border:1px solid var(--line);border-radius:var(--r-lg);padding:22px;background:var(--glass);}
+.pv-card h3{font-family:var(--font-display);font-weight:600;font-size:16px;margin:0 0 4px;}
+.pv-card .hint{font-size:12px;color:var(--ink-3);margin:0 0 16px;}
+.dim{display:flex;align-items:center;gap:12px;margin-bottom:13px;}
+.dim .dlab{flex:0 0 138px;font-size:12.5px;color:var(--ink-2);line-height:1.25;}
+.dim .dlab b{display:block;font-family:var(--font-mono);font-size:9.5px;color:var(--ink-3);font-weight:400;letter-spacing:.06em;margin-top:2px;}
+.dim .bar{flex:1;height:8px;border-radius:999px;background:var(--glass-2);overflow:hidden;}
+.dim .bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--neon-deep),var(--neon));box-shadow:0 0 8px -1px var(--neon-glow);}
+.dim .dval{flex:0 0 34px;text-align:right;font-family:var(--font-display);font-weight:600;font-size:15px;}
+
+.radar{display:block;}
+.radar .ring{fill:none;stroke:var(--line-2);}
+.radar .axis{stroke:var(--line-2);}
+.radar .poly{fill:rgba(31,224,122,.16);stroke:var(--neon);stroke-width:1.6;}
+.radar .pt{fill:var(--neon);}
+.radar .alab{fill:var(--ink-3);font-family:var(--font-mono);font-size:9px;}
+
+.bigchart{width:100%;height:160px;display:block;margin-top:4px;}
+.bigchart .area{opacity:.16;}
+.bigchart .ln{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.bigchart.up .area{fill:var(--neon);} .bigchart.up .ln{stroke:var(--neon);}
+.bigchart.dn .area{fill:var(--loss);} .bigchart.dn .ln{stroke:var(--loss);}
+.bigchart .grid{stroke:var(--line-2);stroke-width:1;}
 </style>
 </head>
 <body>
@@ -580,6 +645,9 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
 
 </main>
 
+<!-- PROFILE VIEW (full-screen overlay) -->
+<div id="profile-view" class="pv" hidden></div>
+
 <script>
 // ===================== CONFIG =====================
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbzXB3uIu-QrvDgw3oLKlK1l3DtZm6cU6OXpq9rMWvuYm8lnB4LcyLuvFoqudKqfYZBAog/exec";
@@ -620,7 +688,7 @@ function renderPodium(top3){
   const labels=["First Place","Second Place","Third Place"];
   document.getElementById("podium").innerHTML = top3.map((t,i)=>{
     const tk=getTierKey(t.rank_code), up=(t.profit||0)>=0;
-    return `<div class="pcard r${i+1}"><div class="glow"></div>
+    return `<div class="pcard r${i+1}" data-acc="${esc(t.account_raw)}"><div class="glow"></div>
       <div class="plabel">${labels[i]}</div>
       <div class="prank">#${i+1}</div>
       <div class="pname">${esc(t.name)}</div>
@@ -637,7 +705,7 @@ function renderPodium(top3){
 function renderRows(traders){
   document.getElementById("lb-body").innerHTML = traders.map((t,i)=>{
     const tk=getTierKey(t.rank_code), up=(t.profit||0)>=0, top=i<3;
-    return `<tr class="${top?`t${i+1}`:""}">
+    return `<tr class="lb-clickable ${top?`t${i+1}`:""}" data-acc="${esc(t.account_raw)}">
       <td><span class="rk ${top?"top":""}">${String(i+1).padStart(2,"0")}</span></td>
       <td><div class="ublock"><span class="av">${esc(initials(t.name))}</span>
         <div><div class="uname">${esc(t.name)}</div><div class="umeta">${esc(t.account_masked)}</div></div></div></td>
@@ -667,6 +735,7 @@ function showEmpty(){
   document.getElementById("lb-body").innerHTML=`<tr><td colspan="8" class="lb-empty"><h4>No participants yet.</h4><p>Attach the Codex Trading Journal EA to start sending scores.</p></td></tr>`;
 }
 
+let LB=[];
 let firstLoad=true;
 function fetchLeaderboard(){
   if(firstLoad) skeleton();
@@ -677,6 +746,7 @@ function fetchLeaderboard(){
   window[cb]=json=>{
     cleanup(); firstLoad=false;
     const traders=(json && json.participants)||[];
+    LB=traders;
     const ended = json && json.status==="ended";
     document.getElementById("stat-participants").textContent=traders.length;
     document.getElementById("lb-count").textContent=`${traders.length} participant${traders.length!==1?"s":""}`;
@@ -686,6 +756,7 @@ function fetchLeaderboard(){
     if(!traders.length){ showEmpty(); return; }
     renderPodium(traders.slice(0,3));
     renderRows(traders);
+    const pv=document.getElementById("profile-view"); if(pv && pv.hidden) route();
   };
   tag.src=SHEET_URL+"?action=leaderboard&callback="+cb;
   tag.onerror=()=>{ cleanup(); if(firstLoad) showError(); };
@@ -738,6 +809,151 @@ document.querySelectorAll(".reveal").forEach(el=>io.observe(el));
     requestAnimationFrame(loop);
   })();
 })();
+
+// ---------- trader profile view ----------
+function gaugeRing(score){
+  score=Math.max(0,Math.min(100,score||0));
+  const R=34, C=2*Math.PI*R, off=C*(1-score/100);
+  return `<svg width="84" height="84" viewBox="0 0 84 84" style="flex:0 0 auto">
+    <circle cx="42" cy="42" r="${R}" fill="none" stroke="var(--glass-2)" stroke-width="8"/>
+    <circle cx="42" cy="42" r="${R}" fill="none" stroke="var(--neon)" stroke-width="8" stroke-linecap="round"
+      stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 42 42)"
+      style="filter:drop-shadow(0 0 6px var(--neon-glow))"/>
+    <text x="42" y="43" text-anchor="middle" dominant-baseline="central" font-family="var(--font-display)" font-weight="700" font-size="20" fill="var(--ink)">${score.toFixed(0)}</text>
+  </svg>`;
+}
+
+function radar(vals){
+  const S=216, c=S/2, R=76;
+  const ang=[-90,0,90,180].map(a=>a*Math.PI/180);
+  const labels=["D1","D2","D3","D4"];
+  const at=(v,i)=>[c+Math.cos(ang[i])*R*(Math.max(0,Math.min(100,v))/100), c+Math.sin(ang[i])*R*(Math.max(0,Math.min(100,v))/100)];
+  let rings=""; [25,50,75,100].forEach(r=>{ const p=ang.map(a=>`${(c+Math.cos(a)*R*r/100).toFixed(1)},${(c+Math.sin(a)*R*r/100).toFixed(1)}`).join(" "); rings+=`<polygon class="ring" points="${p}"/>`; });
+  const axes=ang.map(a=>`<line class="axis" x1="${c}" y1="${c}" x2="${(c+Math.cos(a)*R).toFixed(1)}" y2="${(c+Math.sin(a)*R).toFixed(1)}"/>`).join("");
+  const poly=vals.map((v,i)=>at(v,i)).map(p=>`${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
+  const dots=vals.map((v,i)=>{const p=at(v,i);return `<circle class="pt" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3"/>`;}).join("");
+  const alabs=ang.map((a,i)=>{const lx=c+Math.cos(a)*(R+13), ly=c+Math.sin(a)*(R+13);return `<text class="alab" x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" dominant-baseline="middle">${labels[i]}</text>`;}).join("");
+  return `<svg class="radar" width="${S}" height="${S}" viewBox="0 0 ${S} ${S}">${rings}${axes}<polygon class="poly" points="${poly}"/>${dots}${alabs}</svg>`;
+}
+
+function areaChart(vals){
+  const W=720,H=160,pad=10;
+  vals=(vals||[]).map(Number).filter(v=>!isNaN(v));
+  if(vals.length<2){ return `<svg class="bigchart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><line class="grid" x1="0" y1="${H/2}" x2="${W}" y2="${H/2}"/></svg>`; }
+  const min=Math.min(...vals),max=Math.max(...vals),range=(max-min)||1;
+  const X=i=>pad+(i/(vals.length-1))*(W-2*pad);
+  const Y=v=>H-pad-((v-min)/range)*(H-2*pad);
+  const line=vals.map((v,i)=>`${i?"L":"M"}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
+  const area=`${line} L${X(vals.length-1).toFixed(1)},${H} L${X(0).toFixed(1)},${H} Z`;
+  const up=vals[vals.length-1]>=vals[0];
+  let g=""; for(let k=1;k<4;k++){const y=(pad+k*(H-2*pad)/4).toFixed(0); g+=`<line class="grid" x1="0" y1="${y}" x2="${W}" y2="${y}"/>`;}
+  return `<svg class="bigchart ${up?"up":"dn"}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${g}<path class="area" d="${area}"/><path class="ln" d="${line}" vector-effect="non-scaling-stroke"/></svg>`;
+}
+
+function buildProfile(t){
+  const tk=getTierKey(t.rank_code), up=(t.profit||0)>=0;
+  const dims=[
+    ["Risk-Adjusted Performance","D1 · weight 35%", t.d1||0],
+    ["Consistency & Discipline","D2 · weight 25%", t.d2||0],
+    ["Capital Preservation","D3 · weight 25%", t.d3||0],
+    ["Execution Quality","D4 · weight 15%", t.d4||0],
+  ];
+  const dimRows=dims.map(d=>`<div class="dim"><div class="dlab">${d[0]}<b>${d[1]}</b></div><div class="bar"><i style="width:${Math.max(0,Math.min(100,d[2]))}%"></i></div><div class="dval">${Math.round(d[2])}</div></div>`).join("");
+  const comp=(t.sparkline||[]).map(s=>typeof s==="object"?(s.composite??0):s);
+  const prof=(t.sparkline||[]).map(s=>typeof s==="object"?(s.profit??0):s);
+  const stat=(k,v,cls="")=>`<div class="s"><div class="k">${k}</div><div class="v ${cls}">${v}</div></div>`;
+  return `
+  <div class="pv-hero">
+    <div class="pv-id">
+      <span class="pv-av">${esc(initials(t.name))}</span>
+      <div>
+        <div class="pv-name">${esc(t.name)}</div>
+        <div class="pv-sub">
+          <span class="mono">${esc(t.account_masked)}</span>
+          <span class="tier ${TIERS[tk].cls}"><span class="td"></span>${esc(TIERS[tk].label)}</span>
+          <span class="pv-rankpill">Rank #${t.rank||"—"} of ${LB.length}</span>
+          ${t.rank_title?`<span>${esc(t.rank_title)}</span>`:""}
+        </div>
+      </div>
+    </div>
+    <div class="gauge">
+      ${gaugeRing(t.composite)}
+      <div><div class="lab">Composite</div><div class="val">${(t.composite||0).toFixed(1)}<span style="font-size:14px;color:var(--ink-3);font-weight:400">/100</span></div></div>
+    </div>
+  </div>
+
+  <div class="statg">
+    ${stat("Return",(up?"+":"−")+Math.abs(t.profit||0).toFixed(2)+"%",up?"up":"dn")}
+    ${stat("Win rate",(t.winrate||0).toFixed(1)+"%")}
+    ${stat("Profit Factor",(t.pf||0).toFixed(2)+"×")}
+    ${stat("Max Drawdown",(t.maxdd||0).toFixed(2))}
+    ${stat("Trades",t.trades||0)}
+    ${stat("Balance","$"+(t.balance||0).toFixed(2))}
+    ${stat("Equity","$"+(t.equity||0).toFixed(2))}
+    ${stat("Tier",TIERS[tk].label)}
+  </div>
+
+  <div class="pv-grid2">
+    <div class="pv-card">
+      <h3>Composite Breakdown</h3>
+      <p class="hint">Weighted across 4 dimensions · each scored /100</p>
+      <div style="display:flex;gap:22px;align-items:center;flex-wrap:wrap">
+        <div style="flex:0 0 auto;margin:0 auto">${radar([t.d1||0,t.d2||0,t.d3||0,t.d4||0])}</div>
+        <div style="flex:1;min-width:240px">${dimRows}</div>
+      </div>
+    </div>
+    <div class="pv-card">
+      <h3>Composite over time</h3>
+      <p class="hint">Score trend during the competition</p>
+      ${areaChart(comp)}
+      <h3 style="margin-top:22px">Return over time</h3>
+      <p class="hint">Cumulative return %</p>
+      ${areaChart(prof)}
+    </div>
+  </div>
+
+  <p style="text-align:center;color:var(--ink-3);font-family:var(--font-mono);font-size:12px;margin-top:10px">
+    Updates every 12h via Codex EA${t.last_update?` · Last update ${new Date(t.last_update).toLocaleString()}`:""}
+  </p>`;
+}
+
+function openProfile(acc){
+  const pv=document.getElementById("profile-view");
+  const t=LB.find(x=>String(x.account_raw)===String(acc)||String(x.account)===String(acc));
+  const inner=t?buildProfile(t):`<div class="pv-card" style="text-align:center;padding:60px 24px">
+      <h3 style="font-size:22px">Trader not found</h3>
+      <p class="hint">This participant may have left the standings.</p>
+      <button class="pv-back" onclick="backToBoard()">← Back to leaderboard</button></div>`;
+  pv.innerHTML=`
+    <div class="pv-bar">
+      <button class="pv-back" onclick="backToBoard()">← Back to leaderboard</button>
+      <a class="brand" href="#leaderboard" onclick="backToBoard();return false;"><span class="glyph">C</span> Codex</a>
+    </div>
+    <div class="pv-wrap">${inner}</div>`;
+  pv.hidden=false; document.body.style.overflow="hidden"; window.scrollTo(0,0);
+}
+function closeProfile(){
+  const pv=document.getElementById("profile-view");
+  if(!pv.hidden){ pv.hidden=true; pv.innerHTML=""; document.body.style.overflow=""; }
+}
+function backToBoard(){
+  if(/^#trader\//.test(location.hash)){
+    if(history.length>1) history.back(); else location.hash="leaderboard";
+  } else closeProfile();
+}
+function route(){
+  const m=location.hash.match(/^#trader\/(.+)$/);
+  if(m){ if(LB.length) openProfile(decodeURIComponent(m[1])); }
+  else closeProfile();
+}
+document.addEventListener("click",e=>{
+  const el=e.target.closest("[data-acc]");
+  if(el){ location.hash="trader/"+encodeURIComponent(el.getAttribute("data-acc")); }
+});
+window.addEventListener("hashchange",route);
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape" && !document.getElementById("profile-view").hidden) backToBoard();
+});
 
 // ---------- boot ----------
 fetchLeaderboard();
