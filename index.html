@@ -338,6 +338,20 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
 .socials a{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-2);transition:all .25s;}
 .socials a:hover{color:var(--neon);border-color:rgba(31,224,122,.4);transform:translateY(-2px);}
 
+/* ---------- LANGUAGE SWITCHER ---------- */
+.lang{position:relative;}
+.lang-btn{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--ink-2);
+  padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--glass);transition:all .2s;}
+.lang-btn:hover{color:var(--ink);border-color:rgba(31,224,122,.35);}
+.lang-menu{position:absolute;top:calc(100% + 8px);right:0;min-width:138px;background:var(--bg-3);
+  border:1px solid var(--line);border-radius:12px;padding:6px;z-index:60;
+  box-shadow:0 18px 50px -20px rgba(0,0,0,.9);}
+.lang-menu[hidden]{display:none;}
+.lang-menu button{display:flex;align-items:center;width:100%;text-align:left;font-size:13.5px;
+  color:var(--ink-2);padding:9px 12px;border-radius:8px;transition:all .15s;}
+.lang-menu button:hover{background:var(--glass-2);color:var(--ink);}
+.lang-menu button.active{color:var(--neon);}
+
 /* ---------- LEADERBOARD CLICKABLE ---------- */
 .lb-clickable{cursor:pointer;}
 .pcard{cursor:pointer;}
@@ -417,14 +431,24 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
   <div class="wrap nav-inner">
     <a class="brand" href="#top"><span class="glyph">C</span> Codex</a>
     <div class="nav-links">
-      <a href="#how">How it works</a>
-      <a href="#leaderboard">Leaderboard</a>
-      <a href="#countdown">Competition</a>
-      <a href="#reviews">Reviews</a>
+      <a href="#how" data-i18n="nav.how">How it works</a>
+      <a href="#leaderboard" data-i18n="nav.leaderboard">Leaderboard</a>
+      <a href="#countdown" data-i18n="nav.competition">Competition</a>
+      <a href="#reviews" data-i18n="nav.reviews">Reviews</a>
     </div>
     <div class="nav-right">
+      <div class="lang" id="lang">
+        <button class="lang-btn" id="lang-btn" aria-haspopup="true" aria-expanded="false">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="opacity:.85"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg>
+          <span id="lang-cur">EN</span><span style="opacity:.55">▾</span>
+        </button>
+        <div class="lang-menu" id="lang-menu" hidden>
+          <button data-lang="en">English</button>
+          <button data-lang="th">ไทย</button>
+        </div>
+      </div>
       <span class="pill"><span class="dot-live"></span><span id="nav-status">Live</span></span>
-      <a class="btn btn-primary btn-sm" href="#cta">Join the league <span class="arr">→</span></a>
+      <a class="btn btn-primary btn-sm" href="#cta"><span data-i18n="nav.join">Join the league</span> <span class="arr">→</span></a>
     </div>
   </div>
 </nav>
@@ -436,25 +460,25 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
     <div class="hero-grid"><div class="plane"></div></div>
     <canvas id="particles"></canvas>
     <div class="wrap hero-inner">
-      <span class="kicker">Global MT5 Trading Competition · 15–30 Jun</span>
+      <span class="kicker" data-i18n="hero.kicker">Global MT5 Trading Competition · 15–30 Jun</span>
       <h1>
         <span class="ln"><span>Codex Trading</span></span>
         <span class="ln"><span class="grn">Journal League</span></span>
       </h1>
-      <p class="hero-sub">Trade globally. Compete fairly. Win prizes. A transparent, real-time leaderboard ranking traders on a 4-dimensional composite score — not just raw profit.</p>
+      <p class="hero-sub" data-i18n="hero.sub">Trade globally. Compete fairly. Win prizes. A transparent, real-time leaderboard ranking traders on a 4-dimensional composite score — not just raw profit.</p>
       <div class="hero-ctas">
-        <a class="btn btn-primary" href="https://lin.ee/7yJ2p9Gr" target="_blank" rel="noopener">Download EA <span class="arr">→</span></a>
-        <a class="btn btn-ghost" href="#leaderboard">View Leaderboard</a>
+        <a class="btn btn-primary" href="https://lin.ee/7yJ2p9Gr" target="_blank" rel="noopener"><span data-i18n="btn.downloadEA">Download EA</span> <span class="arr">→</span></a>
+        <a class="btn btn-ghost" href="#leaderboard" data-i18n="btn.viewLeaderboard">View Leaderboard</a>
       </div>
 
       <div class="hero-stats">
-        <div class="stat"><div class="v grn">$500</div><div class="l">Prize Pool</div></div>
-        <div class="stat"><div class="v" id="stat-participants">—</div><div class="l">Participants</div></div>
-        <div class="stat"><div class="v">15–30 Jun</div><div class="l">Competition</div></div>
-        <div class="stat"><div class="v">Live</div><div class="l">Real-time Ranks</div></div>
+        <div class="stat"><div class="v grn">$500</div><div class="l" data-i18n="stat.prizePool">Prize Pool</div></div>
+        <div class="stat"><div class="v" id="stat-participants">—</div><div class="l" data-i18n="stat.participants">Participants</div></div>
+        <div class="stat"><div class="v">15–30 Jun</div><div class="l" data-i18n="stat.competition">Competition</div></div>
+        <div class="stat"><div class="v">Live</div><div class="l" data-i18n="stat.realtime">Real-time Ranks</div></div>
       </div>
 
-      <div class="scroll-hint"><span class="ln"></span> Scroll to explore</div>
+      <div class="scroll-hint"><span class="ln"></span> <span data-i18n="hero.scroll">Scroll to explore</span></div>
     </div>
   </section>
 
@@ -470,15 +494,15 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
   <section class="sec" id="how">
     <div class="wrap">
       <div class="sec-head reveal">
-        <span class="kicker">Your pathway to the leaderboard</span>
-        <h2>How does it <em>work?</em></h2>
-        <p>Three steps connect your MT5 terminal to the live Codex League. No manual entry — your stats sync automatically.</p>
+        <span class="kicker" data-i18n="how.kicker">Your pathway to the leaderboard</span>
+        <h2 data-i18n-html="how.title">How does it <em>work?</em></h2>
+        <p data-i18n="how.intro">Three steps connect your MT5 terminal to the live Codex League. No manual entry — your stats sync automatically.</p>
       </div>
       <div class="how-wrap">
         <div class="steps">
-          <div class="step reveal"><div class="no">1</div><div><h4>Attach EA</h4><p>Download and attach the Codex EA to your MT5 chart.</p></div></div>
-          <div class="step reveal d1"><div class="no">2</div><div><h4>Configure WebRequest</h4><p>Allow WebRequest for Google Apps Script in MT5 settings.</p></div></div>
-          <div class="step reveal d2"><div class="no">3</div><div><h4>Trade &amp; Compete</h4><p>Your stats update every 12 hours on the live leaderboard.</p></div></div>
+          <div class="step reveal"><div class="no">1</div><div><h4 data-i18n="how.s1.t">Attach EA</h4><p data-i18n="how.s1.d">Download and attach the Codex EA to your MT5 chart.</p></div></div>
+          <div class="step reveal d1"><div class="no">2</div><div><h4 data-i18n="how.s2.t">Configure WebRequest</h4><p data-i18n="how.s2.d">Allow WebRequest for Google Apps Script in MT5 settings.</p></div></div>
+          <div class="step reveal d2"><div class="no">3</div><div><h4 data-i18n="how.s3.t">Trade &amp; Compete</h4><p data-i18n="how.s3.d">Your stats update every 12 hours on the live leaderboard.</p></div></div>
         </div>
         <div class="mock reveal d2">
           <div class="wave"></div>
@@ -507,13 +531,13 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
     <div class="wrap">
       <div class="lb-head reveal">
         <div>
-          <span class="kicker">Codex Trading Journal League · Global Standings</span>
-          <h2>The <em>Top Ten.</em></h2>
-          <p>Ranked by a 4-dimensional composite score — Risk-Adjusted Performance, Consistency, Capital Preservation, and Execution Quality. Updates every 12 hours via the Codex EA.</p>
+          <span class="kicker" data-i18n="lb.kicker">Codex Trading Journal League · Global Standings</span>
+          <h2 data-i18n-html="lb.title">The <em>Top Ten.</em></h2>
+          <p data-i18n="lb.intro">Ranked by a 4-dimensional composite score — Risk-Adjusted Performance, Consistency, Capital Preservation, and Execution Quality. Updates every 12 hours via the Codex EA.</p>
         </div>
         <div class="lb-right">
-          <div id="cd-mini" class="pill mono">Loading…</div>
-          <button class="btn btn-ghost btn-sm" id="lb-refresh">↻ Refresh</button>
+          <div id="cd-mini" class="pill mono" data-i18n="lb.loading">Loading…</div>
+          <button class="btn btn-ghost btn-sm" id="lb-refresh" data-i18n="lb.refresh">↻ Refresh</button>
         </div>
       </div>
 
@@ -523,9 +547,9 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
         <table class="lb-table">
           <thead>
             <tr>
-              <th>#</th><th>Trader</th><th>Tier</th><th>14-day curve</th>
-              <th class="num-r">Score</th><th class="num-r">Return</th>
-              <th class="num-r">Win rate</th><th class="num-r">Trades</th>
+              <th>#</th><th data-i18n="th.trader">Trader</th><th data-i18n="th.tier">Tier</th><th data-i18n="th.curve">14-day curve</th>
+              <th class="num-r" data-i18n="th.score">Score</th><th class="num-r" data-i18n="th.return">Return</th>
+              <th class="num-r" data-i18n="th.winrate">Win rate</th><th class="num-r" data-i18n="th.trades">Trades</th>
             </tr>
           </thead>
           <tbody id="lb-body"></tbody>
@@ -544,20 +568,20 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
     <div class="planet"></div>
     <div class="shoot s1"></div><div class="shoot s2"></div>
     <div class="wrap cd-inner">
-      <div class="pill mono" style="margin:0 auto 20px;display:inline-flex;">June · Codex Trading Competition</div>
+      <div class="pill mono" style="margin:0 auto 20px;display:inline-flex;" data-i18n="cd.pill">June · Codex Trading Competition</div>
       <div class="eyebrow" id="cd-label">Competition ends in</div>
       <div class="cd-time" id="cd-big">
-        <div class="cd-u"><b id="cd-d">00</b><span>Days</span></div>
+        <div class="cd-u"><b id="cd-d">00</b><span data-i18n="cd.days">Days</span></div>
         <div class="cd-colon">:</div>
-        <div class="cd-u"><b id="cd-h">00</b><span>Hours</span></div>
+        <div class="cd-u"><b id="cd-h">00</b><span data-i18n="cd.hours">Hours</span></div>
         <div class="cd-colon">:</div>
-        <div class="cd-u"><b id="cd-m">00</b><span>Minutes</span></div>
+        <div class="cd-u"><b id="cd-m">00</b><span data-i18n="cd.minutes">Minutes</span></div>
         <div class="cd-colon">:</div>
-        <div class="cd-u"><b id="cd-s">00</b><span>Seconds</span></div>
+        <div class="cd-u"><b id="cd-s">00</b><span data-i18n="cd.seconds">Seconds</span></div>
       </div>
       <div class="hero-ctas" style="animation:none;opacity:1;justify-content:center;">
-        <a class="btn btn-primary" href="https://lin.ee/7yJ2p9Gr" target="_blank" rel="noopener">Try for free <span class="arr">→</span></a>
-        <a class="btn btn-ghost" href="#leaderboard">I want to join</a>
+        <a class="btn btn-primary" href="https://lin.ee/7yJ2p9Gr" target="_blank" rel="noopener"><span data-i18n="btn.tryfree">Try for free</span> <span class="arr">→</span></a>
+        <a class="btn btn-ghost" href="#leaderboard" data-i18n="btn.wantjoin">I want to join</a>
       </div>
     </div>
   </section>
@@ -566,9 +590,9 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
   <section class="sec" id="reviews">
     <div class="wrap">
       <div class="sec-head reveal">
-        <span class="kicker">From the community</span>
-        <h2>What traders <em>say</em></h2>
-        <div class="rev-badge" style="margin-top:18px;"><span class="st">★★★★★</span> <b>Excellent</b> · based on community feedback</div>
+        <span class="kicker" data-i18n="rev.kicker">From the community</span>
+        <h2 data-i18n-html="rev.title">What traders <em>say</em></h2>
+        <div class="rev-badge" style="margin-top:18px;"><span class="st">★★★★★</span> <b data-i18n="rev.excellent">Excellent</b> <span data-i18n="rev.basedon">· based on community feedback</span></div>
       </div>
       <div class="rev-grid">
         <div class="rev reveal"><div class="stars">★★★★★</div><p>"Finally a competition that scores how you actually trade — risk and consistency, not just a lucky moonshot. The composite ranking feels fair."</p><div class="who"><span class="av">SK</span><div><div class="nm">Satoshi K.</div><div class="hd">Discretionary · JP</div></div></div></div>
@@ -587,11 +611,11 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
         <span class="corner" style="bottom:14px;left:14px;border-right:0;border-top:0;"></span>
         <span class="corner" style="bottom:14px;right:14px;border-left:0;border-top:0;"></span>
         <div class="cta-glyph">C</div>
-        <h2>Join the Codex League today</h2>
-        <p>Real trades. Real ranks. Real prizes. Attach the EA, trade your strategy, and climb the global leaderboard.</p>
+        <h2 data-i18n="cta.title">Join the Codex League today</h2>
+        <p data-i18n="cta.sub">Real trades. Real ranks. Real prizes. Attach the EA, trade your strategy, and climb the global leaderboard.</p>
         <div class="hero-ctas" style="animation:none;opacity:1;justify-content:center;">
-          <a class="btn btn-primary" href="https://lin.ee/7yJ2p9Gr" target="_blank" rel="noopener">Download EA <span class="arr">→</span></a>
-          <a class="btn btn-ghost" href="#leaderboard">View Leaderboard</a>
+          <a class="btn btn-primary" href="https://lin.ee/7yJ2p9Gr" target="_blank" rel="noopener"><span data-i18n="btn.downloadEA">Download EA</span> <span class="arr">→</span></a>
+          <a class="btn btn-ghost" href="#leaderboard" data-i18n="btn.viewLeaderboard">View Leaderboard</a>
         </div>
       </div>
     </div>
@@ -601,9 +625,9 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
   <footer>
     <div class="wrap">
       <div class="discord">
-        <h3>👾 Join our Discord</h3>
-        <p>Dive into the Codex community — share strategies, get setup help, and follow the standings with fellow traders.</p>
-        <a class="btn btn-ghost" href="#" id="discord-link">Join our Discord</a>
+        <h3>👾 <span data-i18n="foot.discordH">Join our Discord</span></h3>
+        <p data-i18n="foot.discordP">Dive into the Codex community — share strategies, get setup help, and follow the standings with fellow traders.</p>
+        <a class="btn btn-ghost" href="#" id="discord-link" data-i18n="foot.discordBtn">Join our Discord</a>
       </div>
       <div class="foot-cols">
         <div class="foot-brand">
@@ -611,24 +635,24 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
           <p>Codex Trading Journal League — a transparent global MT5 trading competition scored on real performance.</p>
         </div>
         <div>
-          <h5>League</h5>
-          <a href="#how">How it works</a>
-          <a href="#leaderboard">Leaderboard</a>
-          <a href="#countdown">Competition</a>
-          <a href="#reviews">Reviews</a>
+          <h5 data-i18n="foot.colLeague">League</h5>
+          <a href="#how" data-i18n="nav.how">How it works</a>
+          <a href="#leaderboard" data-i18n="nav.leaderboard">Leaderboard</a>
+          <a href="#countdown" data-i18n="nav.competition">Competition</a>
+          <a href="#reviews" data-i18n="nav.reviews">Reviews</a>
         </div>
         <div>
-          <h5>Tiers</h5>
+          <h5 data-i18n="foot.colTiers">Tiers</h5>
           <a href="#leaderboard">Obsidian</a>
           <a href="#leaderboard">Black Opal</a>
           <a href="#leaderboard">Cobalt</a>
           <a href="#leaderboard">Diamond</a>
         </div>
         <div>
-          <h5>Resources</h5>
-          <a href="https://lin.ee/7yJ2p9Gr" target="_blank" rel="noopener">Download EA</a>
-          <a href="https://lin.ee/7yJ2p9Gr" target="_blank" rel="noopener">Setup guide</a>
-          <a href="#cta">Join the league</a>
+          <h5 data-i18n="foot.colResources">Resources</h5>
+          <a href="https://lin.ee/7yJ2p9Gr" target="_blank" rel="noopener" data-i18n="btn.downloadEA">Download EA</a>
+          <a href="https://lin.ee/7yJ2p9Gr" target="_blank" rel="noopener" data-i18n="foot.setupGuide">Setup guide</a>
+          <a href="#cta" data-i18n="nav.join">Join the league</a>
         </div>
       </div>
       <div class="foot-bottom">
@@ -666,6 +690,104 @@ function getTierKey(rankCode){
 }
 const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const initials = n => (n||"").trim().split(/[\s_-]+/).slice(0,2).map(w=>w[0]||"").join("").toUpperCase()||"?";
+
+// ---------- i18n (EN / TH) ----------
+const I18N = {
+  "nav.how":{en:"How it works",th:"วิธีใช้งาน"},
+  "nav.leaderboard":{en:"Leaderboard",th:"กระดานอันดับ"},
+  "nav.competition":{en:"Competition",th:"การแข่งขัน"},
+  "nav.reviews":{en:"Reviews",th:"รีวิว"},
+  "nav.join":{en:"Join the league",th:"เข้าร่วมลีก"},
+  "status.live":{en:"Live",th:"สด"},
+  "status.ended":{en:"Ended",th:"จบแล้ว"},
+  "hero.kicker":{en:"Global MT5 Trading Competition · 15–30 Jun",th:"การแข่งขันเทรด MT5 ระดับโลก · 15–30 มิ.ย."},
+  "hero.sub":{en:"Trade globally. Compete fairly. Win prizes. A transparent, real-time leaderboard ranking traders on a 4-dimensional composite score — not just raw profit.",th:"เทรดทั่วโลก แข่งขันอย่างยุติธรรม ลุ้นรางวัล — กระดานอันดับเรียลไทม์ที่จัดอันดับเทรดเดอร์ด้วยคะแนนรวม 4 มิติ ไม่ใช่แค่กำไรดิบ"},
+  "btn.downloadEA":{en:"Download EA",th:"รับ EA"},
+  "btn.viewLeaderboard":{en:"View Leaderboard",th:"ดูกระดานอันดับ"},
+  "stat.prizePool":{en:"Prize Pool",th:"เงินรางวัล"},
+  "stat.participants":{en:"Participants",th:"ผู้เข้าแข่งขัน"},
+  "stat.competition":{en:"Competition",th:"ช่วงแข่งขัน"},
+  "stat.realtime":{en:"Real-time Ranks",th:"อันดับเรียลไทม์"},
+  "hero.scroll":{en:"Scroll to explore",th:"เลื่อนเพื่อสำรวจ"},
+  "how.kicker":{en:"Your pathway to the leaderboard",th:"เส้นทางสู่กระดานอันดับ"},
+  "how.title":{en:"How does it <em>work?</em>",th:"ใช้งาน<em>อย่างไร?</em>"},
+  "how.intro":{en:"Three steps connect your MT5 terminal to the live Codex League. No manual entry — your stats sync automatically.",th:"แค่ 3 ขั้นตอนเชื่อม MT5 ของคุณเข้ากับ Codex League แบบเรียลไทม์ ไม่ต้องกรอกเอง สถิติซิงค์อัตโนมัติ"},
+  "how.s1.t":{en:"Attach EA",th:"ติดตั้ง EA"},
+  "how.s1.d":{en:"Download and attach the Codex EA to your MT5 chart.",th:"ดาวน์โหลดและติดตั้ง Codex EA ลงในชาร์ต MT5 ของคุณ"},
+  "how.s2.t":{en:"Configure WebRequest",th:"ตั้งค่า WebRequest"},
+  "how.s2.d":{en:"Allow WebRequest for Google Apps Script in MT5 settings.",th:"อนุญาต WebRequest สำหรับ Google Apps Script ในตั้งค่า MT5"},
+  "how.s3.t":{en:"Trade & Compete",th:"เทรดและแข่งขัน"},
+  "how.s3.d":{en:"Your stats update every 12 hours on the live leaderboard.",th:"สถิติของคุณอัปเดตทุก 12 ชั่วโมงบนกระดานอันดับ"},
+  "lb.kicker":{en:"Codex Trading Journal League · Global Standings",th:"Codex Trading Journal League · อันดับระดับโลก"},
+  "lb.title":{en:"The <em>Top Ten.</em>",th:"<em>สิบอันดับแรก</em>"},
+  "lb.intro":{en:"Ranked by a 4-dimensional composite score — Risk-Adjusted Performance, Consistency, Capital Preservation, and Execution Quality. Updates every 12 hours via the Codex EA.",th:"จัดอันดับด้วยคะแนนรวม 4 มิติ — ผลตอบแทนถ่วงความเสี่ยง, ความสม่ำเสมอ, การรักษาเงินทุน และคุณภาพการเข้าออกออเดอร์ อัปเดตทุก 12 ชั่วโมงผ่าน Codex EA"},
+  "lb.loading":{en:"Loading…",th:"กำลังโหลด…"},
+  "lb.refresh":{en:"↻ Refresh",th:"↻ รีเฟรช"},
+  "th.trader":{en:"Trader",th:"เทรดเดอร์"},
+  "th.tier":{en:"Tier",th:"ระดับ"},
+  "th.curve":{en:"14-day curve",th:"กราฟ 14 วัน"},
+  "th.score":{en:"Score",th:"คะแนน"},
+  "th.return":{en:"Return",th:"ผลตอบแทน"},
+  "th.winrate":{en:"Win rate",th:"อัตราชนะ"},
+  "th.trades":{en:"Trades",th:"จำนวนเทรด"},
+  "lb.lastsync":{en:"Last sync",th:"ซิงค์ล่าสุด"},
+  "lb.empty.h":{en:"No participants yet.",th:"ยังไม่มีผู้เข้าแข่งขัน"},
+  "lb.empty.p":{en:"Attach the Codex Trading Journal EA to start sending scores.",th:"ติดตั้ง Codex Trading Journal EA เพื่อเริ่มส่งคะแนน"},
+  "lb.error":{en:"Unable to load standings.",th:"โหลดอันดับไม่ได้"},
+  "lb.tryagain":{en:"Try again",th:"ลองอีกครั้ง"},
+  "cd.pill":{en:"June · Codex Trading Competition",th:"มิถุนายน · การแข่งขัน Codex"},
+  "cd.endsin":{en:"Competition ends in",th:"การแข่งขันสิ้นสุดใน"},
+  "cd.endsinShort":{en:"Ends in",th:"เหลืออีก"},
+  "cd.ended":{en:"Competition ended",th:"การแข่งขันจบแล้ว"},
+  "cd.days":{en:"Days",th:"วัน"},
+  "cd.hours":{en:"Hours",th:"ชั่วโมง"},
+  "cd.minutes":{en:"Minutes",th:"นาที"},
+  "cd.seconds":{en:"Seconds",th:"วินาที"},
+  "btn.tryfree":{en:"Try for free",th:"ทดลองฟรี"},
+  "btn.wantjoin":{en:"I want to join",th:"ฉันอยากเข้าร่วม"},
+  "rev.kicker":{en:"From the community",th:"จากคอมมูนิตี้"},
+  "rev.title":{en:"What traders <em>say</em>",th:"เทรดเดอร์<em>พูดถึงเรา</em>"},
+  "rev.excellent":{en:"Excellent",th:"ยอดเยี่ยม"},
+  "rev.basedon":{en:"· based on community feedback",th:"· จากเสียงตอบรับของคอมมูนิตี้"},
+  "cta.title":{en:"Join the Codex League today",th:"เข้าร่วม Codex League วันนี้"},
+  "cta.sub":{en:"Real trades. Real ranks. Real prizes. Attach the EA, trade your strategy, and climb the global leaderboard.",th:"เทรดจริง อันดับจริง รางวัลจริง — ติดตั้ง EA เทรดตามกลยุทธ์ของคุณ แล้วไต่กระดานอันดับระดับโลก"},
+  "foot.discordH":{en:"Join our Discord",th:"เข้าร่วม Discord ของเรา"},
+  "foot.discordP":{en:"Dive into the Codex community — share strategies, get setup help, and follow the standings with fellow traders.",th:"เข้าร่วมคอมมูนิตี้ Codex — แลกเปลี่ยนกลยุทธ์ ขอความช่วยเหลือการตั้งค่า และติดตามอันดับไปกับเทรดเดอร์คนอื่น"},
+  "foot.discordBtn":{en:"Join our Discord",th:"เข้าร่วม Discord"},
+  "foot.colLeague":{en:"League",th:"ลีก"},
+  "foot.colTiers":{en:"Tiers",th:"ระดับ"},
+  "foot.colResources":{en:"Resources",th:"แหล่งข้อมูล"},
+  "foot.setupGuide":{en:"Setup guide",th:"คู่มือติดตั้ง"},
+};
+let LANG="en", LBended=false, lastSyncTime=null;
+function t(id){ const e=I18N[id]; return e ? (e[LANG]||e.en) : id; }
+function countText(n){ return LANG==="th" ? `${n} คน` : `${n} participant${n!==1?"s":""}`; }
+function applyI18n(){
+  document.querySelectorAll("[data-i18n]").forEach(el=>{ const k=el.getAttribute("data-i18n"); if(I18N[k]) el.textContent=t(k); });
+  document.querySelectorAll("[data-i18n-html]").forEach(el=>{ const k=el.getAttribute("data-i18n-html"); if(I18N[k]) el.innerHTML=t(k); });
+  document.documentElement.lang=LANG;
+  const cur=document.getElementById("lang-cur"); if(cur) cur.textContent=LANG.toUpperCase();
+  document.querySelectorAll(".lang-menu button").forEach(b=>b.classList.toggle("active", b.getAttribute("data-lang")===LANG));
+}
+function refreshDynamicText(){
+  const ns=document.getElementById("nav-status"); if(ns) ns.textContent = LBended ? t("status.ended") : t("status.live");
+  tickCountdown();
+  if(LB){ const lc=document.getElementById("lb-count"); if(lc) lc.textContent=countText(LB.length);
+    const sy=document.getElementById("lb-sync"); if(sy) sy.textContent = lastSyncTime?`${t("lb.lastsync")} · ${new Date(lastSyncTime).toLocaleTimeString(LANG==="th"?"th-TH":undefined)}`:"";
+    if(LB.length===0) showEmpty();
+  }
+}
+function setLang(l){ LANG=l; applyI18n(); refreshDynamicText();
+  const menu=document.getElementById("lang-menu"); if(menu) menu.hidden=true;
+  const btn=document.getElementById("lang-btn"); if(btn) btn.setAttribute("aria-expanded","false");
+}
+(function(){
+  const btn=document.getElementById("lang-btn"), menu=document.getElementById("lang-menu");
+  if(!btn||!menu) return;
+  btn.addEventListener("click",e=>{ e.stopPropagation(); const willOpen=menu.hidden; menu.hidden=!willOpen; btn.setAttribute("aria-expanded",String(willOpen)); });
+  document.addEventListener("click",()=>{ if(!menu.hidden) menu.hidden=true; });
+  menu.querySelectorAll("button").forEach(b=> b.addEventListener("click",e=>{ e.stopPropagation(); setLang(b.getAttribute("data-lang")); }));
+})();
 
 // ---------- sparkline ----------
 function sparkSVG(data, w=108, h=30){
@@ -727,12 +849,12 @@ function skeleton(){
 
 function showError(){
   document.getElementById("podium").innerHTML="";
-  document.getElementById("lb-body").innerHTML=`<tr><td colspan="8" class="lb-error">Unable to load standings. <button id="retry" style="color:var(--neon)">Try again</button></td></tr>`;
+  document.getElementById("lb-body").innerHTML=`<tr><td colspan="8" class="lb-error">${t("lb.error")} <button id="retry" style="color:var(--neon)">${t("lb.tryagain")}</button></td></tr>`;
   const r=document.getElementById("retry"); if(r) r.onclick=fetchLeaderboard;
 }
 function showEmpty(){
   document.getElementById("podium").innerHTML="";
-  document.getElementById("lb-body").innerHTML=`<tr><td colspan="8" class="lb-empty"><h4>No participants yet.</h4><p>Attach the Codex Trading Journal EA to start sending scores.</p></td></tr>`;
+  document.getElementById("lb-body").innerHTML=`<tr><td colspan="8" class="lb-empty"><h4>${t("lb.empty.h")}</h4><p>${t("lb.empty.p")}</p></td></tr>`;
 }
 
 let LB=[];
@@ -747,12 +869,12 @@ function fetchLeaderboard(){
     cleanup(); firstLoad=false;
     const traders=(json && json.participants)||[];
     LB=traders;
-    const ended = json && json.status==="ended";
+    const ended = json && json.status==="ended"; LBended=ended;
+    lastSyncTime=(json && json.updated)||null;
     document.getElementById("stat-participants").textContent=traders.length;
-    document.getElementById("lb-count").textContent=`${traders.length} participant${traders.length!==1?"s":""}`;
-    const sync=document.getElementById("lb-sync");
-    sync.textContent = (json && json.updated) ? "Last sync · "+new Date(json.updated).toLocaleTimeString() : "";
-    document.getElementById("nav-status").textContent = ended ? "Ended" : "Live";
+    document.getElementById("lb-count").textContent=countText(traders.length);
+    document.getElementById("lb-sync").textContent = lastSyncTime ? `${t("lb.lastsync")} · ${new Date(lastSyncTime).toLocaleTimeString(LANG==="th"?"th-TH":undefined)}` : "";
+    document.getElementById("nav-status").textContent = ended ? t("status.ended") : t("status.live");
     if(!traders.length){ showEmpty(); return; }
     renderPodium(traders.slice(0,3));
     renderRows(traders);
@@ -767,11 +889,11 @@ document.getElementById("lb-refresh").onclick=()=>{ firstLoad=true; fetchLeaderb
 // ---------- countdown ----------
 function tickCountdown(){
   const left = COMP_END - Date.now();
-  const mini=document.getElementById("cd-mini");
+  const mini=document.getElementById("cd-mini"), label=document.getElementById("cd-label");
   if(left<=0){
     ["cd-d","cd-h","cd-m","cd-s"].forEach(id=>document.getElementById(id).textContent="00");
-    document.getElementById("cd-label").textContent="Competition ended";
-    if(mini) mini.textContent="Competition ended";
+    if(label) label.textContent=t("cd.ended");
+    if(mini) mini.textContent=t("cd.ended");
     return;
   }
   const d=Math.floor(left/864e5), h=Math.floor(left%864e5/36e5), m=Math.floor(left%36e5/6e4), s=Math.floor(left%6e4/1e3);
@@ -780,7 +902,8 @@ function tickCountdown(){
   document.getElementById("cd-h").textContent=p(h);
   document.getElementById("cd-m").textContent=p(m);
   document.getElementById("cd-s").textContent=p(s);
-  if(mini) mini.textContent=`Ends in ${d}d ${p(h)}h ${p(m)}m ${p(s)}s`;
+  if(label) label.textContent=t("cd.endsin");
+  if(mini) mini.textContent=`${t("cd.endsinShort")} ${d}d ${p(h)}h ${p(m)}m ${p(s)}s`;
 }
 
 // ---------- reveal on scroll ----------
@@ -956,6 +1079,7 @@ document.addEventListener("keydown",e=>{
 });
 
 // ---------- boot ----------
+applyI18n();
 fetchLeaderboard();
 setInterval(fetchLeaderboard,60000);
 tickCountdown();
