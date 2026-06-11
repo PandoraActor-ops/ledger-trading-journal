@@ -36,9 +36,9 @@
 {
   "@context": "https://schema.org",
   "@type": "Event",
-  "name": "June 2026 Codex Trading Journal League Competition",
-  "startDate": "2026-06-15T00:00:00+07:00",
-  "endDate": "2026-06-30T23:59:59+07:00",
+  "name": "July 2026 Codex Trading Journal League Competition",
+  "startDate": "2026-07-01T00:00:00+07:00",
+  "endDate": "2026-07-15T23:59:59+07:00",
   "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
   "eventStatus": "https://schema.org/EventScheduled",
   "location": {
@@ -57,7 +57,7 @@
     "priceCurrency": "USD",
     "url": "https://codextradingjournal.com",
     "availability": "https://schema.org/InStock",
-    "validThrough": "2026-06-30T23:59:59+07:00"
+    "validThrough": "2026-07-15T23:59:59+07:00"
   }
 }
 </script>
@@ -595,7 +595,7 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
     <div class="hero-grid"><div class="plane"></div></div>
     <canvas id="particles"></canvas>
     <div class="wrap hero-inner">
-      <span class="kicker" data-i18n="hero.kicker">Global MT5 Trading Competition · 15–30 Jun</span>
+      <span class="kicker" data-i18n="hero.kicker">Global MT5 Trading Competition · 1–15 Jul</span>
       <h1>
         <span class="ln"><span>Codex Trading</span></span>
         <span class="ln"><span class="grn">Journal League</span></span>
@@ -609,7 +609,7 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
       <div class="hero-stats">
         <div class="stat"><div class="v grn">$500</div><div class="l" data-i18n="stat.prizePool">Prize Pool</div></div>
         <div class="stat"><div class="v" id="stat-participants">—</div><div class="l" data-i18n="stat.participants">Participants</div></div>
-        <div class="stat"><div class="v">15–30 Jun</div><div class="l" data-i18n="stat.competition">Competition</div></div>
+        <div class="stat"><div class="v">1–15 Jul</div><div class="l" data-i18n="stat.competition">Competition</div></div>
         <div class="stat"><div class="v">Live</div><div class="l" data-i18n="stat.realtime">Real-time Ranks</div></div>
       </div>
 
@@ -703,7 +703,7 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
     <div class="planet"></div>
     <div class="shoot s1"></div><div class="shoot s2"></div>
     <div class="wrap cd-inner">
-      <div class="pill mono" style="margin:0 auto 20px;display:inline-flex;" data-i18n="cd.pill">June · Codex Trading Competition</div>
+      <div class="pill mono" style="margin:0 auto 20px;display:inline-flex;" data-i18n="cd.pill">July · Codex Trading Competition</div>
       <div class="eyebrow" id="cd-label">Competition ends in</div>
       <div class="cd-time" id="cd-big">
         <div class="cd-u"><b id="cd-d">00</b><span data-i18n="cd.days">Days</span></div>
@@ -810,7 +810,7 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
 <script>
 // ===================== CONFIG =====================
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbzXB3uIu-QrvDgw3oLKlK1l3DtZm6cU6OXpq9rMWvuYm8lnB4LcyLuvFoqudKqfYZBAog/exec";
-const COMP_END  = new Date("2026-06-30T23:59:00+07:00");
+const COMP_END  = new Date("2026-07-15T23:59:00+07:00");
 
 const TIERS = {
   obsidian:{label:"Obsidian",cls:"obsidian"}, blackopal:{label:"Black Opal",cls:"blackopal"},
@@ -835,7 +835,7 @@ const I18N = {
   "nav.join":{en:"Join the league",th:"เข้าร่วมลีก"},
   "status.live":{en:"Live",th:"สด"},
   "status.ended":{en:"Ended",th:"จบแล้ว"},
-  "hero.kicker":{en:"Global MT5 Trading Competition · 15–30 Jun",th:"การแข่งขันเทรด MT5 ระดับโลก · 15–30 มิ.ย."},
+  "hero.kicker":{en:"Global MT5 Trading Competition · 1–15 Jul",th:"การแข่งขันเทรด MT5 ระดับโลก · 1–15 ก.ค."},
   "hero.sub":{en:"Trade globally. Compete fairly. Win prizes. A transparent, real-time leaderboard ranking traders on a 4-dimensional composite score — not just raw profit.",th:"เทรดทั่วโลก แข่งขันอย่างยุติธรรม ลุ้นรางวัล — กระดานอันดับเรียลไทม์ที่จัดอันดับเทรดเดอร์ด้วยคะแนนรวม 4 มิติ ไม่ใช่แค่กำไรดิบ"},
   "btn.downloadEA":{en:"Download EA",th:"รับ EA"},
   "btn.viewLeaderboard":{en:"View Leaderboard",th:"ดูกระดานอันดับ"},
@@ -870,7 +870,7 @@ const I18N = {
   "lb.empty.p":{en:"Attach the Codex Trading Journal EA to start sending scores.",th:"ติดตั้ง Codex Trading Journal EA เพื่อเริ่มส่งคะแนน"},
   "lb.error":{en:"Unable to load standings.",th:"โหลดอันดับไม่ได้"},
   "lb.tryagain":{en:"Try again",th:"ลองอีกครั้ง"},
-  "cd.pill":{en:"June · Codex Trading Competition",th:"มิถุนายน · การแข่งขัน Codex"},
+  "cd.pill":{en:"July · Codex Trading Competition",th:"กรกฎาคม · การแข่งขัน Codex"},
   "cd.endsin":{en:"Competition ends in",th:"การแข่งขันสิ้นสุดใน"},
   "cd.endsinShort":{en:"Ends in",th:"เหลืออีก"},
   "cd.ended":{en:"Competition ended",th:"การแข่งขันจบแล้ว"},
