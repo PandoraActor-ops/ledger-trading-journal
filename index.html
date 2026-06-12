@@ -486,6 +486,30 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
 .eap-dim-score{font-family:var(--font-mono);font-size:12px;color:var(--neon);width:24px;text-align:right;}
 .eap-footer{font-family:var(--font-mono);font-size:11px;color:var(--ink-3);text-align:center;padding:20px 0;border-top:1px solid var(--line-2);}
 .eap-gauge-box svg,.eap-radar-box svg,.eap-chart-box svg{display:block;width:100%;height:100%;}
+/* ---------- Ranking bar (สีตาม Tier) ---------- */
+.eap-rank-bar{position:relative;border-radius:12px;background:#0c100e;overflow:hidden;padding:14px 16px;border:1px solid rgba(255,255,255,.06);margin-top:14px}
+.eap-rank-bar .rkb-glow{position:absolute;top:-55px;right:-35px;width:150px;height:150px;border-radius:50%;filter:blur(42px);opacity:.55;pointer-events:none}
+.eap-rank-bar .rkb-in{position:relative;z-index:1;display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.eap-rank-bar .rkb-label{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:#E8C766;text-shadow:0 0 8px rgba(232,199,102,.45);font-weight:600}
+.eap-rank-bar .rkb-name{font-family:var(--font-display);font-size:21px;font-weight:700;line-height:1.05;margin-top:3px;-webkit-background-clip:text;background-clip:text;color:transparent;width:max-content}
+.eap-rank-bar .rkb-stars{font-size:11px;margin-top:4px;letter-spacing:1.5px;color:#E8C766;text-shadow:0 0 8px rgba(232,199,102,.4)}
+.eap-rank-bar .rkb-comp{font-family:var(--font-display);font-size:24px;font-weight:700;color:#fff;line-height:1;text-align:right}
+.eap-rank-bar .rkb-comp small{display:block;font-size:8px;letter-spacing:.16em;color:rgba(255,255,255,.4);text-transform:uppercase;margin-top:2px;font-family:inherit;font-weight:400}
+.rkb-obsidian  .rkb-glow{background:#8E7BC0}.rkb-obsidian{border-color:rgba(142,123,192,.38)}.rkb-obsidian  .rkb-name{background-image:linear-gradient(100deg,#C9A8F0,#8E2FD0)}
+.rkb-blackopal .rkb-glow{background:radial-gradient(circle at 60% 40%,#2FD3A8 0,transparent 62%),radial-gradient(circle at 30% 70%,#4FB6E8 0,transparent 58%),radial-gradient(circle at 80% 80%,#E86FB0 0,transparent 55%);opacity:.6}.rkb-blackopal{border-color:rgba(47,211,168,.36)}.rkb-blackopal .rkb-name{background-image:linear-gradient(100deg,#9AE3AE,#46C9D8)}
+.rkb-cobalt    .rkb-glow{background:#4A8FE0}.rkb-cobalt{border-color:rgba(74,143,224,.36)}.rkb-cobalt    .rkb-name{background-image:linear-gradient(100deg,#8FB8F2,#1E6FC4)}
+.rkb-redberyl  .rkb-glow{background:#D45A6E}.rkb-redberyl{border-color:rgba(212,90,110,.36)}.rkb-redberyl  .rkb-name{background-image:linear-gradient(100deg,#F2A0B4,#C21E72)}
+.rkb-pallasite .rkb-glow{background:#9CBB4E}.rkb-pallasite{border-color:rgba(156,187,78,.36)}.rkb-pallasite .rkb-name{background-image:linear-gradient(100deg,#D6E88E,#8FB84A)}
+.rkb-diamond   .rkb-glow{background:#B8D8F0}.rkb-diamond{border-color:rgba(184,216,240,.40)}.rkb-diamond   .rkb-name{background-image:linear-gradient(100deg,#EAF4FF,#9FC4E8)}
+/* ---------- My Dashboard entry ---------- */
+.md-entry{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.md-input{background:var(--glass);border:1px solid var(--line);border-radius:8px;color:var(--ink);font-family:var(--font-mono);font-size:13px;padding:7px 11px;width:150px;outline:none}
+.md-input:focus{border-color:var(--neon);box-shadow:0 0 0 2px var(--neon-glow)}
+.md-prompt{text-align:center;padding:60px 24px}
+.md-prompt h3{font-size:22px;margin-bottom:6px}
+.cx-toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);background:#0c100e;border:1px solid var(--neon);color:var(--ink);font-size:13px;padding:10px 18px;border-radius:10px;box-shadow:0 0 18px var(--neon-glow);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:9999}
+.cx-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (max-width:520px){.md-input{width:120px}.md-entry{gap:6px}}
 @media (max-width:1000px){.eap-comp-block{grid-template-columns:1fr;}.eap-comp-left{border-right:none;padding-right:0;border-bottom:1px solid var(--line);padding-bottom:24px;}}
 @media (max-width:800px){.eap-stats{grid-template-columns:repeat(2,1fr);}.eap-hero{grid-template-columns:1fr;padding:32px;}.eap-comp-right{grid-template-columns:1fr;justify-items:center;}}
 @media (max-width:500px){.eap-stats{grid-template-columns:1fr;}}
@@ -568,6 +592,7 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
     <div class="nav-links">
       <a href="#how" data-i18n="nav.how">How it works</a>
       <a href="#leaderboard" data-i18n="nav.leaderboard">Leaderboard</a>
+      <a href="#me" data-i18n="nav.mydash">My Dashboard</a>
       <a href="#countdown" data-i18n="nav.competition">Competition</a>
       <a href="#reviews" data-i18n="nav.reviews">Reviews</a>
     </div>
@@ -773,6 +798,7 @@ footer{border-top:1px solid var(--line-2);background:var(--bg-2);padding:64px 0 
           <h5 data-i18n="foot.colLeague">League</h5>
           <a href="#how" data-i18n="nav.how">How it works</a>
           <a href="#leaderboard" data-i18n="nav.leaderboard">Leaderboard</a>
+          <a href="#me" data-i18n="nav.mydash">My Dashboard</a>
           <a href="#countdown" data-i18n="nav.competition">Competition</a>
           <a href="#reviews" data-i18n="nav.reviews">Reviews</a>
         </div>
@@ -830,6 +856,16 @@ const initials = n => (n||"").trim().split(/[\s_-]+/).slice(0,2).map(w=>w[0]||""
 const I18N = {
   "nav.how":{en:"How it works",th:"วิธีใช้งาน"},
   "nav.leaderboard":{en:"Leaderboard",th:"กระดานอันดับ"},
+  "nav.mydash":{en:"My Dashboard",th:"แดชบอร์ดของฉัน"},
+  "md.title":{en:"My Dashboard",th:"แดชบอร์ดของฉัน"},
+  "md.sub":{en:"Enter your MT5 account number to open your performance dashboard. (Data shown is already public on the leaderboard.)",th:"กรอกเลขบัญชี MT5 ของคุณเพื่อเปิดแดชบอร์ดผลงาน (ข้อมูลนี้แสดงบนกระดานอันดับอยู่แล้ว)"},
+  "md.placeholder":{en:"MT5 account number",th:"เลขบัญชี MT5"},
+  "md.open":{en:"Open",th:"เปิด"},
+  "md.share":{en:"Share",th:"แชร์"},
+  "md.copied":{en:"Link copied",th:"คัดลอกลิงก์แล้ว"},
+  "md.back":{en:"Leaderboard",th:"กระดานอันดับ"},
+  "md.notfound":{en:"Account not found",th:"ไม่พบบัญชีนี้"},
+  "md.notfoundSub":{en:"This account hasn't reported stats yet, or the number is incorrect.",th:"บัญชีนี้อาจยังไม่ส่งสถิติ หรือกรอกเลขไม่ถูกต้อง"},
   "nav.competition":{en:"Competition",th:"การแข่งขัน"},
   "nav.reviews":{en:"Reviews",th:"รีวิว"},
   "nav.join":{en:"Join the league",th:"เข้าร่วมลีก"},
@@ -1147,6 +1183,9 @@ function equityChart(t){
 function buildProfile(t){
   const tk = getTierKey(t.rank_code);
   const comp = t.composite || 0;
+  const rankIdx = LB.findIndex(x => String(x.account_raw) === String(t.account_raw) || String(x.account) === String(t.account));
+  const rank = rankIdx >= 0 ? rankIdx + 1 : (t.rank || LB.length);
+  const pct = LB.length ? Math.max(1, Math.round(rank / LB.length * 100)) : 0;
   const wins = Math.round(((t.winrate || 0) / 100) * (t.trades || 0));
   const losses = (t.trades || 0) - wins;
   const profColor = (t.profit || 0) >= 0 ? 'var(--neon)' : 'var(--loss)';
@@ -1168,10 +1207,19 @@ function buildProfile(t){
         <div class="eap-name">${esc(t.name)}</div>
         <div class="eap-meta">
           <span class="eap-pill">${esc(t.account_masked)}</span>
-          <span class="eap-pill">Rank #${t.rank || "—"} of ${LB.length}</span>
-          <span class="tier ${TIERS[tk].cls}"><span class="td"></span>${esc(TIERS[tk].label)}</span>
+          <span class="eap-pill">Rank #${rank} of ${LB.length} · Top ${pct}%</span>
         </div>
-        <div class="eap-tier-big">${esc(TIERS[tk].label)}</div>
+        <div class="eap-rank-bar rkb-${tk}">
+          <div class="rkb-glow"></div>
+          <div class="rkb-in">
+            <div>
+              <div class="rkb-label">Ranking</div>
+              <div class="rkb-name">${esc(TIERS[tk].label)}</div>
+              <div class="rkb-stars">${"★".repeat(Math.max(1,Math.min(6, t.stars||1)))}</div>
+            </div>
+            <div class="rkb-comp">${comp.toFixed(1)}<small>Composite</small></div>
+          </div>
+        </div>
         <div class="eap-prog-wrap">
           <div class="eap-prog-text"><span>${pS}</span></div>
           <div class="eap-prog-track"><div class="eap-prog-fill" style="width:${pP}%"></div></div>
@@ -1234,7 +1282,7 @@ function buildProfile(t){
       </div>
     </div>
     <div class="eap-footer">
-      Updates every 12h via Codex EA${t.last_update ? ' · Last update ' + new Date(t.last_update).toLocaleString() : ''}
+      Updates hourly via Codex EA${t.last_update ? ' · Last update ' + new Date(t.last_update).toLocaleString() : ''}
     </div>
   </div>`;
 }
@@ -1259,12 +1307,60 @@ function closeProfile(){
   if(!pv.hidden){ pv.hidden=true; pv.innerHTML=""; document.body.style.overflow=""; }
 }
 function backToBoard(){
-  if(/^#trader\//.test(location.hash)){
+  if(/^#(trader|me)\//.test(location.hash) || location.hash==="#me"){
     if(history.length>1) history.back(); else location.hash="leaderboard";
   } else closeProfile();
 }
+function openMyDashboard(acc){
+  const pv = document.getElementById("profile-view");
+  const found = acc ? LB.find(x => String(x.account_raw)===String(acc) || String(x.account)===String(acc)) : null;
+  let inner;
+  if(!acc){
+    inner = `<div class="pv-card md-prompt"><h3>${t("md.title")}</h3><p class="hint">${t("md.sub")}</p></div>`;
+  } else if(found){
+    inner = buildProfile(found);
+  } else {
+    inner = `<div class="pv-card md-prompt"><h3>${t("md.notfound")}</h3><p class="hint">${t("md.notfoundSub")}</p></div>`;
+  }
+  pv.innerHTML = `
+    <div class="pv-bar">
+      <button class="pv-back" onclick="location.hash='leaderboard'">← ${t("md.back")}</button>
+      <div class="md-entry">
+        <input id="md-acc" class="md-input" inputmode="numeric" autocomplete="off"
+               placeholder="${t("md.placeholder")}" value="${esc(acc||"")}">
+        <button class="btn btn-primary btn-sm" onclick="goMyDashboard()">${t("md.open")}</button>
+        ${found ? `<button class="btn btn-ghost btn-sm" onclick="shareMyDashboard()">${t("md.share")}</button>` : ""}
+      </div>
+    </div>
+    <div class="pv-wrap">${inner}</div>`;
+  pv.hidden = false; document.body.style.overflow = "hidden"; window.scrollTo(0,0);
+  const inp = document.getElementById("md-acc");
+  if(inp){ inp.addEventListener("keydown", e => { if(e.key==="Enter") goMyDashboard(); }); if(!acc) inp.focus(); }
+}
+function goMyDashboard(){
+  const v = (document.getElementById("md-acc").value || "").trim();
+  if(v) location.hash = "me/" + encodeURIComponent(v);
+}
+function shareMyDashboard(){
+  const url = location.href;
+  if(navigator.clipboard){ navigator.clipboard.writeText(url).then(()=>cxToast(t("md.copied"))); }
+  else { cxToast(url); }
+}
+function cxToast(msg){
+  let el = document.getElementById("cx-toast");
+  if(!el){ el = document.createElement("div"); el.id = "cx-toast"; el.className = "cx-toast"; document.body.appendChild(el); }
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(cxToast._t); cxToast._t = setTimeout(()=>el.classList.remove("show"), 2200);
+}
 function route(){
-  const m=location.hash.match(/^#trader\/(.+)$/);
+  const md = location.hash.match(/^#me(?:\/(.+))?$/);
+  if(md){
+    const acc = md[1] ? decodeURIComponent(md[1]) : "";
+    if(acc && !LB.length) return;   // รอ leaderboard โหลดก่อน (post-fetch route() จะเปิดให้)
+    openMyDashboard(acc);
+    return;
+  }
+  const m = location.hash.match(/^#trader\/(.+)$/);
   if(m){ if(LB.length) openProfile(decodeURIComponent(m[1])); }
   else closeProfile();
 }
