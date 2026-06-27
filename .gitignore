@@ -4,6 +4,9 @@ run.bat
 design.tar.gz
 design/
 
+# Claude Code local settings (contains API tokens — never commit)
+.claude/settings.local.json
+
 # OS
 .DS_Store
 Thumbs.db
