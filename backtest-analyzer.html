@@ -58,7 +58,11 @@
   .lede { color: var(--ink-2); font-size:15px; line-height:1.6; margin:0; max-width: 56ch; }
   .lede b { color: var(--ink); }
 
+  .upload-slots { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:760px){ .upload-slots{grid-template-columns:1fr;} }
+
   .dropzone {
+    position: relative;
     border: 1px dashed var(--line);
     border-radius: var(--r-lg);
     background: var(--glass);
@@ -69,6 +73,16 @@
   }
   .dropzone:hover, .dropzone.drag { border-color: var(--neon); background: var(--neon-tint); }
   .dropzone.busy { cursor: wait; opacity: .7; }
+  .dropzone.dz-done { border-style: solid; border-color: var(--neon); }
+  .dropzone-secondary { padding: 30px 24px; gap:10px; }
+  .dropzone-secondary .dz-icon { width:40px; height:40px; }
+  .dropzone-secondary .dz-icon svg { width:18px; height:18px; }
+  .dropzone-secondary .dz-title { font-size:14.5px; }
+  .slot-num {
+    position:absolute; top:14px; left:16px; font-family: var(--font-mono); font-size:11px;
+    color: var(--ink-4); border:1px solid var(--line); border-radius:50%; width:20px; height:20px;
+    display:flex; align-items:center; justify-content:center;
+  }
   .dz-icon {
     width:52px; height:52px; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
@@ -84,8 +98,12 @@
     padding: 9px 20px; cursor:pointer; letter-spacing:.02em;
   }
   .dz-btn:hover { background: var(--neon-2); }
-  .dz-privacy { font-size:11.5px; color:var(--ink-4); display:flex; align-items:center; gap:6px; margin-top:2px; }
-  .dz-privacy svg { width:12px; height:12px; stroke:var(--ink-4); }
+  .dz-btn-ghost { color: var(--neon-2); background: transparent; border: 1px solid var(--line); }
+  .dz-btn-ghost:hover { background: var(--glass-2); color: var(--neon-2); }
+  .csv-stage-status { font-size:11.5px; color: var(--neon-2); font-family: var(--font-mono); min-height: 14px; }
+  .csv-stage-status.is-error { color: var(--loss); }
+  .dz-privacy { font-size:11.5px; color:var(--ink-4); display:flex; align-items:center; gap:6px; margin-top:2px; align-self:center; }
+  .dz-privacy svg { width:12px; height:12px; stroke:var(--ink-4); flex:none; }
 
   .sample-link { align-self:center; font-size:12.5px; color:var(--ink-3); }
   .sample-link a { color: var(--neon-2); text-decoration:none; cursor:pointer; }
@@ -238,18 +256,34 @@
       <p class="lede">Drop the <b>.html report</b> MT5 exports after a backtest. We reconstruct the balance curve, find the worst drawdown, and count every pullback — entirely in your browser.</p>
     </div>
 
-    <div class="dropzone" id="dropzone">
-      <div class="dz-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+    <div class="upload-slots">
+      <div class="dropzone" id="dropzone">
+        <div class="slot-num">1</div>
+        <div class="dz-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        </div>
+        <div class="dz-title" id="dzTitle">Drop your report.html here</div>
+        <div class="dz-sub">Strategy Tester &rarr; right-click the results &rarr; <code>Save as Report</code> &middot; required</div>
+        <button class="dz-btn" id="browseBtn" type="button">Choose file</button>
+        <input type="file" id="fileInput" accept=".htm,.html,text/html" hidden />
       </div>
-      <div class="dz-title" id="dzTitle">Drop your report.html here</div>
-      <div class="dz-sub">or click to browse &middot; expects the file saved via Strategy Tester &rarr; right-click &rarr; <code>Save as Report</code></div>
-      <button class="dz-btn" id="browseBtn" type="button">Choose file</button>
-      <input type="file" id="fileInput" accept=".htm,.html,text/html" hidden />
-      <div class="dz-privacy">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3z"/></svg>
-        Nothing leaves your device — parsed client-side, never uploaded
+
+      <div class="dropzone dropzone-secondary" id="csvDropzone">
+        <div class="slot-num">2</div>
+        <div class="dz-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        </div>
+        <div class="dz-title" id="csvDzTitle">Drop the equity CSV here</div>
+        <div class="dz-sub">Strategy Tester &rarr; Graph tab &rarr; export report data &middot; optional, for exact floating-drawdown dates</div>
+        <button class="dz-btn dz-btn-ghost" id="browseCsvStageBtn" type="button">Choose CSV</button>
+        <input type="file" id="csvInputStage" accept=".csv" hidden />
+        <div class="csv-stage-status" id="csvStageStatus"></div>
       </div>
+    </div>
+
+    <div class="dz-privacy">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3z"/></svg>
+      Nothing leaves your device — both files are parsed client-side, never uploaded
     </div>
 
     <div class="error-banner" id="errorBanner">
@@ -831,7 +865,9 @@
   }
 
   function renderResults(summary, model){
-    resetCsvPrompt();
+    document.getElementById('floatingPanel').style.display = 'none';
+    document.getElementById('tFloatingDDSub').innerHTML =
+      'reported by Strategy Tester\'s own stat &middot; exact date not available (no per-tick equity export in this file)';
     document.getElementById('rEaName').textContent = summary.expert;
     document.getElementById('rSymbol').textContent = summary.symbol;
     document.getElementById('rPeriodLine').textContent = `${model.totalDeals.toLocaleString('en-US')} deals`;
@@ -884,6 +920,8 @@
 
     document.getElementById('uploadStage').classList.add('hide');
     document.getElementById('results').classList.add('show');
+
+    if (pendingCsvRows) applyEquityCsv(pendingCsvRows);
   }
 
   // ---------------- File handling ----------------
@@ -944,20 +982,32 @@
     document.getElementById('uploadStage').classList.remove('hide');
     fileInput.value = '';
     clearError();
-    resetCsvPrompt();
+    resetCsvState();
   });
 
-  // ---------------- Equity CSV upload wiring ----------------
+  // ---------------- Equity CSV upload wiring (shared between both entry points) ----------------
   const csvPrompt = document.getElementById('csvPrompt');
   const csvInput = document.getElementById('csvInput');
   const addCsvLink = document.getElementById('addCsvLink');
+  const csvDropzone = document.getElementById('csvDropzone');
+  const csvInputStage = document.getElementById('csvInputStage');
+  const csvStageStatus = document.getElementById('csvStageStatus');
+  const CSV_ADD_LABEL = '+ Add equity CSV for the exact date';
+  const CSV_STAGE_LABEL = 'Drop the equity CSV here';
+  let pendingCsvRows = null;
   let csvErrorEl = null;
 
-  function resetCsvPrompt(){
+  function resetCsvState(){
+    pendingCsvRows = null;
     csvPrompt.classList.remove('done');
-    addCsvLink.textContent = '+ Add equity CSV for the exact date';
+    addCsvLink.textContent = CSV_ADD_LABEL;
     csvInput.value = '';
     if (csvErrorEl) { csvErrorEl.remove(); csvErrorEl = null; }
+    csvDropzone.classList.remove('dz-done', 'busy');
+    document.getElementById('csvDzTitle').textContent = CSV_STAGE_LABEL;
+    csvStageStatus.textContent = '';
+    csvStageStatus.classList.remove('is-error');
+    csvInputStage.value = '';
     document.getElementById('floatingPanel').style.display = 'none';
     document.getElementById('tFloatingDDSub').innerHTML =
       'reported by Strategy Tester\'s own stat &middot; exact date not available (no per-tick equity export in this file)';
@@ -973,33 +1023,77 @@
     csvErrorEl.classList.add('show');
   }
 
-  addCsvLink.addEventListener('click', (e) => { e.preventDefault(); csvInput.click(); });
-  csvInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (csvErrorEl) csvErrorEl.classList.remove('show');
-    addCsvLink.textContent = 'Reading equity CSV…';
+  function readAndParseCsv(file, onSuccess, onError){
     const reader = new FileReader();
     reader.onload = () => {
       setTimeout(() => {
         try {
           const text = decodeReport(reader.result);
           const rows = parseEquityCsv(text);
-          applyEquityCsv(rows);
-          csvPrompt.classList.add('done');
-          addCsvLink.textContent = `✓ Equity CSV loaded (${rows.length.toLocaleString('en-US')} samples)`;
+          onSuccess(rows);
         } catch (err) {
-          addCsvLink.textContent = '+ Add equity CSV for the exact date';
-          showCsvError(err.message || 'Could not read this CSV.');
+          onError(err.message || 'Could not read this CSV.');
         }
       }, 0);
     };
-    reader.onerror = () => {
-      addCsvLink.textContent = '+ Add equity CSV for the exact date';
-      showCsvError('Could not read the file from disk.');
-    };
+    reader.onerror = () => onError('Could not read the file from disk.');
     reader.readAsArrayBuffer(file);
+  }
+
+  function markCsvLoaded(rows){
+    pendingCsvRows = rows;
+    csvPrompt.classList.add('done');
+    addCsvLink.textContent = `✓ Equity CSV loaded (${rows.length.toLocaleString('en-US')} samples)`;
+    csvDropzone.classList.add('dz-done');
+    csvDropzone.classList.remove('busy');
+    document.getElementById('csvDzTitle').textContent = 'Equity CSV ready';
+    csvStageStatus.textContent = `✓ ${rows.length.toLocaleString('en-US')} samples loaded`;
+    csvStageStatus.classList.remove('is-error');
+    if (document.getElementById('results').classList.contains('show')) {
+      applyEquityCsv(rows);
+    }
+  }
+
+  // entry point A: the small link inside the "Worst floating drop" tile (post-analysis)
+  addCsvLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (csvPrompt.classList.contains('done')) return;
+    csvInput.click();
   });
+  csvInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (csvErrorEl) csvErrorEl.classList.remove('show');
+    addCsvLink.textContent = 'Reading equity CSV…';
+    readAndParseCsv(file,
+      (rows) => markCsvLoaded(rows),
+      (msg) => { addCsvLink.textContent = CSV_ADD_LABEL; showCsvError(msg); }
+    );
+  });
+
+  // entry point B: the dedicated upload-stage dropzone (can be used before or after the report)
+  function handleCsvStageFile(file){
+    if (!file) return;
+    csvDropzone.classList.add('busy');
+    document.getElementById('csvDzTitle').textContent = 'Reading equity CSV…';
+    csvStageStatus.textContent = '';
+    csvStageStatus.classList.remove('is-error');
+    readAndParseCsv(file,
+      (rows) => markCsvLoaded(rows),
+      (msg) => {
+        csvDropzone.classList.remove('busy');
+        document.getElementById('csvDzTitle').textContent = CSV_STAGE_LABEL;
+        csvStageStatus.textContent = msg;
+        csvStageStatus.classList.add('is-error');
+      }
+    );
+  }
+  csvDropzone.addEventListener('click', () => csvInputStage.click());
+  document.getElementById('browseCsvStageBtn').addEventListener('click', (e) => { e.stopPropagation(); csvInputStage.click(); });
+  csvInputStage.addEventListener('change', (e) => handleCsvStageFile(e.target.files[0]));
+  ['dragenter','dragover'].forEach(evt => csvDropzone.addEventListener(evt, (e) => { e.preventDefault(); csvDropzone.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(evt => csvDropzone.addEventListener(evt, (e) => { e.preventDefault(); csvDropzone.classList.remove('drag'); }));
+  csvDropzone.addEventListener('drop', (e) => { handleCsvStageFile(e.dataTransfer.files[0]); });
 
   // ---------------- Sample report (embedded, real numbers from a real backtest) ----------------
   document.getElementById('sampleBtn').addEventListener('click', () => {
