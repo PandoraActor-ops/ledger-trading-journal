@@ -1,0 +1,853 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Backtest Analyzer — Codex Trading Journal</title>
+<meta name="description" content="Drop an MT5 Strategy Tester report and get a readable drawdown ledger, balance curve, and lot/P&L breakdown — parsed entirely in your browser, nothing uploaded." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    color-scheme: dark;
+    --bg:#05070A; --bg-2:#080B0F; --bg-3:#0B1014;
+    --glass:rgba(255,255,255,0.035); --glass-2:rgba(255,255,255,0.06);
+    --line:rgba(255,255,255,0.09); --line-2:rgba(255,255,255,0.055);
+    --ink:#EDF1F0; --ink-2:#AEB7B5; --ink-3:#727C7A; --ink-4:#4B5452;
+    --neon:#1FE07A; --neon-2:#5CF0A8; --neon-deep:#0A8F4D;
+    --neon-glow:rgba(31,224,122,0.55); --neon-tint:rgba(31,224,122,0.10);
+    --loss:#FF6B6B; --loss-tint:rgba(255,107,107,0.12);
+    --r-sm:8px; --r:12px; --r-lg:18px;
+    --font-display:"Space Grotesk","Segoe UI",system-ui,sans-serif;
+    --font-sans:"Geist","Segoe UI",Helvetica,Arial,sans-serif;
+    --font-mono:"JetBrains Mono",ui-monospace,"SF Mono",Consolas,monospace;
+  }
+  * { box-sizing: border-box; }
+  html,body { margin:0; padding:0; background:var(--bg); }
+  body {
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    background:
+      radial-gradient(900px 480px at 15% -10%, rgba(31,224,122,0.08), transparent 60%),
+      radial-gradient(700px 420px at 100% 0%, rgba(31,224,122,0.05), transparent 55%),
+      var(--bg);
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 48px 24px 90px; display:flex; flex-direction:column; gap:26px; }
+
+  .nav {
+    display:flex; align-items:center; justify-content:space-between;
+    padding-bottom: 18px; border-bottom: 1px solid var(--line-2);
+  }
+  .brand { display:flex; align-items:center; gap:10px; font-family: var(--font-display); font-weight:600; font-size:15px; letter-spacing:.01em; }
+  .brand .dot { width:8px; height:8px; border-radius:50%; background:var(--neon); box-shadow:0 0 12px var(--neon-glow); }
+  .brand .sub { color:var(--ink-3); font-weight:400; font-size:12.5px; font-family: var(--font-mono); }
+  .back-link { color:var(--ink-2); font-size:13px; text-decoration:none; display:flex; align-items:center; gap:6px; }
+  .back-link:hover { color: var(--neon-2); }
+
+  .intro { display:flex; flex-direction:column; gap:10px; max-width: 640px; }
+  .eyebrow {
+    font-family: var(--font-mono); font-size:11.5px; letter-spacing:.12em; text-transform:uppercase;
+    color: var(--neon-2); margin:0; display:flex; align-items:center; gap:8px;
+  }
+  .eyebrow::before { content:""; width:16px; height:1px; background:var(--neon-2); }
+  h1 { font-family: var(--font-display); font-size:34px; font-weight:600; letter-spacing:-0.01em; margin:0; text-wrap:balance; }
+  h1 .accent { color: var(--neon); }
+  .lede { color: var(--ink-2); font-size:15px; line-height:1.6; margin:0; max-width: 56ch; }
+  .lede b { color: var(--ink); }
+
+  .dropzone {
+    border: 1px dashed var(--line);
+    border-radius: var(--r-lg);
+    background: var(--glass);
+    padding: 46px 28px;
+    display:flex; flex-direction:column; align-items:center; text-align:center; gap:14px;
+    transition: border-color .18s ease, background .18s ease;
+    cursor: pointer;
+  }
+  .dropzone:hover, .dropzone.drag { border-color: var(--neon); background: var(--neon-tint); }
+  .dropzone.busy { cursor: wait; opacity: .7; }
+  .dz-icon {
+    width:52px; height:52px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--neon-tint); border:1px solid var(--line);
+  }
+  .dz-icon svg { width:22px; height:22px; stroke:var(--neon-2); }
+  .dz-title { font-family: var(--font-display); font-size:16.5px; font-weight:600; }
+  .dz-sub { font-size:13px; color:var(--ink-3); max-width: 46ch; }
+  .dz-sub code { font-family: var(--font-mono); color: var(--ink-2); background: var(--glass-2); padding: 1px 5px; border-radius:4px; }
+  .dz-btn {
+    margin-top:4px; font-family: var(--font-mono); font-size:12.5px; font-weight:600;
+    color:var(--bg); background: var(--neon); border:none; border-radius: 999px;
+    padding: 9px 20px; cursor:pointer; letter-spacing:.02em;
+  }
+  .dz-btn:hover { background: var(--neon-2); }
+  .dz-privacy { font-size:11.5px; color:var(--ink-4); display:flex; align-items:center; gap:6px; margin-top:2px; }
+  .dz-privacy svg { width:12px; height:12px; stroke:var(--ink-4); }
+
+  .sample-link { align-self:center; font-size:12.5px; color:var(--ink-3); }
+  .sample-link a { color: var(--neon-2); text-decoration:none; cursor:pointer; }
+  .sample-link a:hover { text-decoration:underline; }
+
+  .error-banner {
+    display:none; border:1px solid rgba(255,107,107,0.35); background: var(--loss-tint);
+    border-radius: var(--r); padding:14px 18px; font-size:13px; color: var(--ink);
+    align-items:flex-start; gap:10px;
+  }
+  .error-banner.show { display:flex; }
+  .error-banner svg { width:18px; height:18px; flex:none; stroke: var(--loss); margin-top:1px; }
+  .error-banner b { color: var(--loss); }
+  .error-banner code { font-family: var(--font-mono); background: var(--glass-2); padding:1px 5px; border-radius:4px; }
+
+  #results { display:none; flex-direction:column; gap:22px; }
+  #results.show { display:flex; }
+  #uploadStage.hide { display:none; }
+
+  .masthead {
+    display:flex; justify-content:space-between; align-items:flex-end; gap:20px; flex-wrap:wrap;
+    border-bottom:1px solid var(--line-2); padding-bottom:18px;
+  }
+  .masthead h2 { font-family: var(--font-display); font-size:26px; font-weight:600; margin:0 0 6px; letter-spacing:-.01em; }
+  .masthead .meta { color:var(--ink-3); font-size:13.5px; }
+  .masthead .meta b { color: var(--ink-2); font-weight:600; }
+  .reset-btn {
+    font-family: var(--font-mono); font-size:12px; color:var(--ink-3); background:none;
+    border:1px solid var(--line); border-radius:999px; padding:6px 14px; cursor:pointer;
+  }
+  .reset-btn:hover { color:var(--ink); border-color: var(--line-2); }
+
+  .period-block { text-align:right; font-family: var(--font-mono); color:var(--ink-3); font-size:12.5px; line-height:1.6; }
+  .period-block .cap { font-size:19px; color:var(--ink); font-weight:600; font-family: var(--font-display); }
+
+  .stat-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  @media (max-width:760px){ .stat-row{grid-template-columns:repeat(2,1fr);} }
+  .tile {
+    background: var(--glass); border:1px solid var(--line); border-radius: var(--r);
+    padding:16px 18px; display:flex; flex-direction:column; gap:6px;
+  }
+  .tile .label { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; font-family: var(--font-mono); }
+  .tile .value { font-family: var(--font-mono); font-size:23px; font-weight:600; color:var(--ink); }
+  .tile .value.good { color: var(--neon-2); }
+  .tile .value.critical { color: var(--loss); }
+  .tile .sub { font-size:12px; color:var(--ink-3); }
+  .tile .sub .flag { color: var(--loss); font-weight:600; }
+
+  .panel { background: var(--glass); border:1px solid var(--line); border-radius: var(--r-lg); padding:22px 24px 18px; }
+  .panel-head { display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:8px; margin-bottom:4px; }
+  .panel-title { font-family: var(--font-display); font-size:17px; font-weight:600; margin:0; }
+  .panel-note { font-size:12px; color:var(--ink-4); font-family: var(--font-mono); }
+
+  .chart-shell { position:relative; margin-top:6px; }
+  #balanceChart { width:100%; height:auto; display:block; overflow:visible; }
+  .axis-label { font-size:10.5px; fill:var(--ink-4); font-family: var(--font-mono); }
+  .grid-line { stroke: var(--line-2); stroke-width:1; }
+  .peak-line { stroke: var(--ink-4); stroke-width:1; stroke-dasharray:3 4; }
+  .balance-line { fill:none; stroke: var(--neon); stroke-width:2; filter: drop-shadow(0 0 5px var(--neon-glow)); }
+  .balance-area { fill:url(#areaGrad); }
+  .crash-dot { fill: var(--loss); stroke: var(--bg-2); stroke-width:2; }
+  .peak-dot { fill: var(--neon); stroke: var(--bg-2); stroke-width:2; }
+  .callout-text { font-size:12px; font-family: var(--font-mono); }
+  .callout-title { fill: var(--loss); font-weight:700; }
+  .callout-sub { fill: var(--ink-3); }
+  .peak-label { fill: var(--ink-4); font-size:11px; font-family: var(--font-mono); }
+  .hover-line { stroke: var(--ink-3); stroke-width:1; opacity:0; pointer-events:none; }
+  .hover-dot { fill: var(--bg-2); stroke: var(--neon); stroke-width:2; opacity:0; pointer-events:none; }
+  .tooltip {
+    position:absolute; pointer-events:none; background: var(--bg-3); color:var(--ink);
+    border:1px solid var(--line); font-family: var(--font-mono); font-size:12px; padding:6px 9px;
+    border-radius:6px; opacity:0; transform:translate(-50%,-130%); white-space:nowrap;
+    box-shadow:0 6px 18px rgba(0,0,0,0.5); z-index:5;
+  }
+
+  .duo { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media (max-width:760px){ .duo{grid-template-columns:1fr;} }
+  .bars { display:flex; align-items:flex-end; gap:10px; height:170px; padding:6px 4px 0; border-bottom:1px solid var(--line-2); position:relative; }
+  .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:6px; }
+  .bar-col .bar-val { font-size:11px; font-family: var(--font-mono); color:var(--ink-3); white-space:nowrap; }
+  .bar { width:100%; max-width:34px; border-radius:4px 4px 0 0; transition:opacity .15s ease; }
+  .bar.neon { background: linear-gradient(180deg, var(--neon-2), var(--neon-deep)); box-shadow:0 0 10px rgba(31,224,122,0.25); }
+  .bar.good { background: var(--neon); }
+  .bar-col:hover .bar { opacity:.75; }
+  .bar-labels { display:flex; gap:10px; padding:8px 4px 0; }
+  .bar-labels span { flex:1; text-align:center; font-size:11px; color:var(--ink-4); font-family: var(--font-mono); }
+
+  .table-scroll { overflow-x:auto; margin-top:8px; }
+  table { border-collapse:collapse; width:100%; min-width:720px; }
+  thead th { text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-4); font-weight:600; padding:0 10px 8px; border-bottom:1px solid var(--line-2); font-family: var(--font-mono); }
+  thead th.num, tbody td.num { text-align:right; }
+  tbody td { padding:9px 10px; font-size:13px; border-bottom:1px solid var(--line-2); color:var(--ink-2); }
+  tbody td.num { font-family: var(--font-mono); color:var(--ink); }
+  tbody tr:last-child td { border-bottom:none; }
+  tbody tr.worst td { background: var(--loss-tint); }
+  .rank { color:var(--ink-4); font-family: var(--font-mono); }
+  .depth-cell { display:flex; align-items:center; gap:8px; justify-content:flex-end; }
+  .depth-bar-track { width:70px; height:6px; background:var(--line-2); border-radius:3px; overflow:hidden; }
+  .depth-bar-fill { height:100%; background: var(--loss); border-radius:3px; }
+  .neg { color: var(--loss); font-weight:600; }
+
+  tr.ep-row { cursor: pointer; }
+  tr.ep-row:hover td { background: var(--glass-2); }
+  .period-cell { display:flex; align-items:center; gap:8px; }
+  .chevron { width:14px; height:14px; flex:none; stroke:var(--ink-4); transition: transform .15s ease; }
+  tr.ep-row.open .chevron { transform: rotate(90deg); stroke: var(--neon-2); }
+  .period-text { font-family: var(--font-mono); font-size:12.5px; }
+  .duration-tag { font-family: var(--font-mono); font-size:10.5px; color:var(--ink-4); background:var(--glass-2); padding:1px 6px; border-radius:10px; margin-left:6px; }
+
+  tr.detail-row { display:none; }
+  tr.detail-row.open { display:table-row; }
+  tr.detail-row td { padding: 14px 10px 18px; border-bottom:1px solid var(--line-2); background: var(--bg-3); }
+  .daily-wrap { display:flex; flex-direction:column; gap:8px; }
+  .daily-caption { font-size:11.5px; color:var(--ink-3); font-family: var(--font-mono); display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; }
+  .daily-scroll { overflow-x:auto; }
+  .daily-bars { display:flex; align-items:flex-end; gap:6px; height:100px; min-width:max-content; padding: 18px 4px 0; }
+  .daily-col { display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:5px; width:26px; flex:none; position:relative; }
+  .daily-bar { width:14px; border-radius:2px 2px 0 0; background: var(--loss); opacity:.85; }
+  .daily-col.is-peak .daily-bar { background: var(--loss); opacity:1; box-shadow:0 0 8px rgba(255,107,107,0.45); }
+  .daily-col.is-last .daily-bar { background: var(--neon); opacity:1; box-shadow:0 0 8px var(--neon-glow); }
+  .daily-val { font-size:9.5px; font-family: var(--font-mono); color:var(--ink-4); position:absolute; top:-16px; white-space:nowrap; }
+  .daily-col.is-peak .daily-val { color: var(--loss); font-weight:600; }
+  .daily-col.is-last .daily-val { color: var(--neon-2); font-weight:600; }
+  .daily-date { font-size:9.5px; font-family: var(--font-mono); color:var(--ink-4); white-space:nowrap; transform: rotate(-40deg); transform-origin: top center; margin-top:2px; }
+
+  footer { font-size:11.5px; color:var(--ink-4); line-height:1.6; border-top:1px solid var(--line-2); padding-top:16px; }
+  footer b { color:var(--ink-3); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="nav">
+    <div class="brand">Codex<span style="color:var(--ink-3);font-weight:400"> Trading Journal</span><span class="dot"></span><span class="sub">Backtest Analyzer</span></div>
+    <a class="back-link" href="index.html">&larr; codextradingjournal.com</a>
+  </div>
+
+  <div id="uploadStage">
+    <div class="intro">
+      <p class="eyebrow">Free tool &middot; no account needed</p>
+      <h1>Turn a raw <span class="accent">Strategy Tester report</span> into a ledger you can read.</h1>
+      <p class="lede">Drop the <b>.html report</b> MT5 exports after a backtest. We reconstruct the balance curve, find the worst drawdown, and count every pullback — entirely in your browser.</p>
+    </div>
+
+    <div class="dropzone" id="dropzone">
+      <div class="dz-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+      </div>
+      <div class="dz-title" id="dzTitle">Drop your report.html here</div>
+      <div class="dz-sub">or click to browse &middot; expects the file saved via Strategy Tester &rarr; right-click &rarr; <code>Save as Report</code></div>
+      <button class="dz-btn" id="browseBtn" type="button">Choose file</button>
+      <input type="file" id="fileInput" accept=".htm,.html,text/html" hidden />
+      <div class="dz-privacy">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3z"/></svg>
+        Nothing leaves your device — parsed client-side, never uploaded
+      </div>
+    </div>
+
+    <div class="error-banner" id="errorBanner">
+      <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M12 9v4M12 17h.01M10.3 3.9L2.5 17a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+      <div><b>Couldn't read this file.</b> <span id="errorMsg"></span> Export it from Strategy Tester via right-click on the results tab &rarr; <code>Save as Report</code>, then try again.</div>
+    </div>
+
+    <div class="sample-link">Don't have a report handy? <a id="sampleBtn">Load a sample — Trend Grid Basket EA</a></div>
+  </div>
+
+  <div id="results">
+    <div class="masthead">
+      <div>
+        <h2 id="rEaName">—</h2>
+        <p class="meta">Symbol <b id="rSymbol">—</b> &middot; <span id="rPeriodLine"></span></p>
+      </div>
+      <div style="display:flex; align-items:flex-end; gap:16px;">
+        <div class="period-block">
+          <div class="cap" id="rStartCap">—</div>
+          <div>starting capital</div>
+          <div style="margin-top:6px" id="rPeriodRange"></div>
+        </div>
+        <button class="reset-btn" id="resetBtn">&larr; Analyze another</button>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="tile">
+        <div class="label">Net Profit</div>
+        <div class="value" id="tNetProfit">—</div>
+        <div class="sub" id="tNetProfitSub"></div>
+      </div>
+      <div class="tile">
+        <div class="label">Worst realized drop</div>
+        <div class="value critical" id="tRealizedDD">—</div>
+        <div class="sub" id="tRealizedDDSub"></div>
+      </div>
+      <div class="tile">
+        <div class="label">Worst floating drop</div>
+        <div class="value critical" id="tFloatingDD">—</div>
+        <div class="sub">reported by Strategy Tester's own stat &middot; exact date not available (no per-tick equity export in this file)</div>
+      </div>
+      <div class="tile">
+        <div class="label">Lots traded (opened)</div>
+        <div class="value" id="tLots">—</div>
+        <div class="sub" id="tLotsSub"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3 class="panel-title" id="chartTitle">Balance curve</h3>
+        <span class="panel-note" id="chartNote">hover to inspect</span>
+      </div>
+      <div class="chart-shell" id="chartShell">
+        <svg id="balanceChart" viewBox="0 0 1040 340" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--neon)" stop-opacity="0.30"/>
+              <stop offset="100%" stop-color="var(--neon)" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <g id="gridLayer"></g>
+          <path id="areaPath" class="balance-area"></path>
+          <line id="peakLine" class="peak-line"></line>
+          <path id="linePath" class="balance-line"></path>
+          <circle id="peakDot" class="peak-dot" r="4"></circle>
+          <circle id="crashDot" class="crash-dot" r="4.5"></circle>
+          <text id="peakLabel" class="peak-label"></text>
+          <g id="callout"></g>
+          <line id="hoverLine" class="hover-line" y1="10" y2="270"></line>
+          <circle id="hoverDot" class="hover-dot" r="4.5"></circle>
+          <g id="xAxis"></g>
+          <g id="yAxis"></g>
+        </svg>
+        <div class="tooltip" id="tooltip"></div>
+      </div>
+    </div>
+
+    <div class="duo">
+      <div class="panel">
+        <div class="panel-head"><h3 class="panel-title">Lots opened per month</h3></div>
+        <div class="bars" id="lotsBars"></div>
+        <div class="bar-labels" id="lotsLabels"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3 class="panel-title">Net P/L per month</h3></div>
+        <div class="bars" id="plBars"></div>
+        <div class="bar-labels" id="plLabels"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3 class="panel-title">Drawdown ledger — deepest pullbacks</h3>
+        <span class="panel-note" id="ledgerNote"></span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>#</th><th class="num">Peak balance</th><th>Drawdown period</th><th class="num">Depth</th><th class="num">%</th></tr></thead>
+          <tbody id="ledgerBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <footer>
+      <b>Reading notes —</b> reconstructed from the Strategy Tester deal history, not just the summary graphs. "Realized" drawdown is the Balance column, fully dated;
+      "Floating" drawdown is the platform's own Equity Drawdown Maximal stat and reflects unrealized loss while a position/basket was still open — MT5's report doesn't
+      export a per-tick equity series, so that one figure can't be dated from this file alone. Lot totals count entry ("in") deals only; pending orders are excluded throughout.
+    </footer>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  const MAX_FILE_BYTES = 60 * 1024 * 1024; // 60MB safety cap
+  const fmt = n => n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const fmt0 = n => n.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:2});
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const shortDate = iso => { const [y,m,d]=iso.split('-').map(Number); return `${d} ${MONTHS[m-1]}`; };
+  const tinyDate   = iso => { const [y,m,d]=iso.split('-').map(Number); return `${MONTHS[m-1]} ${d}`; };
+  const daysBetween = (a,b) => Math.round((new Date(b) - new Date(a)) / 86400000);
+
+  // ---------------- Parsing ----------------
+  function decodeReport(arrayBuffer){
+    const bytes = new Uint8Array(arrayBuffer);
+    let encoding = 'utf-8';
+    if (bytes[0] === 0xFF && bytes[1] === 0xFE) encoding = 'utf-16le';
+    else if (bytes[0] === 0xFE && bytes[1] === 0xFF) encoding = 'utf-16be';
+    return new TextDecoder(encoding).decode(arrayBuffer);
+  }
+
+  function grabField(html, label){
+    const esc = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(esc + '\\s*:?\\s*</td>\\s*<td[^>]*>(?:<b>)?([^<]*)', 'i');
+    const m = html.match(re);
+    return m ? m[1].trim() : null;
+  }
+
+  function parseNumPct(raw){
+    if (!raw) return {value:null, pct:null};
+    const m = raw.match(/(-?[\d\s.]+)\s*(?:\(([\d.]+)%\))?/);
+    if (!m) return {value:null, pct:null};
+    return { value: parseFloat(m[1].replace(/\s/g,'')), pct: m[2] ? parseFloat(m[2]) : null };
+  }
+
+  function parseReport(html){
+    const dealsMarker = '<b>Deals</b>';
+    const dealsIdx = html.indexOf(dealsMarker);
+    if (dealsIdx === -1) {
+      throw new Error('This file has no "Deals" table — it may be an Optimization Report, a chart image, or an unrelated HTML file.');
+    }
+    const dealsSection = html.slice(dealsIdx);
+    const rowRe = /<tr bgcolor="#(?:FFFFFF|F7F7F7)" align=right>([\s\S]*?)<\/tr>/g;
+    const cellRe = /<td[^>]*>([\s\S]*?)<\/td>/g;
+    const cleanNum = s => { const t = s.replace(/ /g,' ').replace(/ /g,'').trim(); return t === '' ? null : parseFloat(t); };
+
+    const deals = [];
+    let m;
+    while ((m = rowRe.exec(dealsSection))) {
+      const row = m[1];
+      const cells = [];
+      let cm; cellRe.lastIndex = 0;
+      while ((cm = cellRe.exec(row))) cells.push(cm[1]);
+      const [timeS, dealNo, symbol, type, direction, vol, price, order, comm, swap, profit, balance] = cells;
+      if (!timeS || !timeS.trim()) continue;
+      const [datePart, timePart] = timeS.trim().split(' ');
+      const [y,mo,d] = datePart.split('.').map(Number);
+      const [hh,mi,ss] = (timePart||'0:0:0').split(':').map(Number);
+      deals.push({
+        time: Date.UTC(y, mo-1, d, hh, mi, ss),
+        dateStr: datePart.replace(/\./g,'-'),
+        symbol: (symbol||'').trim(),
+        dir: (direction||'').trim(),
+        vol: cleanNum(vol||''),
+        profit: cleanNum(profit||''),
+        balance: cleanNum(balance||''),
+      });
+    }
+    if (deals.length < 2) {
+      throw new Error('The Deals table in this file is empty — nothing to analyze.');
+    }
+
+    const netProfit = parseNumPct(grabField(html, 'Total Net Profit'));
+    const balanceDD = parseNumPct(grabField(html, 'Balance Drawdown Maximal'));
+    const equityDD  = parseNumPct(grabField(html, 'Equity Drawdown Maximal'));
+    const profitFactor = grabField(html, 'Profit Factor');
+    const totalTrades = grabField(html, 'Total Trades');
+    const expert = grabField(html, 'Expert') || 'Expert Advisor';
+    const symbolField = grabField(html, 'Symbol') || (deals.find(d=>d.symbol)||{}).symbol || '—';
+
+    return { deals, summary: { netProfit, balanceDD, equityDD, profitFactor, totalTrades, expert, symbol: symbolField } };
+  }
+
+  // ---------------- Model computation ----------------
+  function computeModel(deals){
+    const monthlyLotsMap = new Map();
+    const monthlyPLMap = new Map();
+    let totalLots = 0;
+
+    for (let i = 1; i < deals.length; i++) {
+      const d = deals[i];
+      const key = d.dateStr.slice(0,7);
+      if (d.dir === 'in' && d.vol) {
+        monthlyLotsMap.set(key, (monthlyLotsMap.get(key)||0) + d.vol);
+        totalLots += d.vol;
+      }
+      if (d.profit !== null) {
+        monthlyPLMap.set(key, (monthlyPLMap.get(key)||0) + d.profit);
+      }
+    }
+    const monthKeys = [...new Set([...monthlyLotsMap.keys(), ...monthlyPLMap.keys()])].sort();
+    const monthLabel = k => { const [y,m] = k.split('-').map(Number); return MONTHS[m-1]; };
+    const monthlyLots = monthKeys.map(k => [monthLabel(k), +(monthlyLotsMap.get(k)||0).toFixed(2)]);
+    const monthlyPL   = monthKeys.map(k => [monthLabel(k), +(monthlyPLMap.get(k)||0).toFixed(2)]);
+
+    // drawdown episodes on the realized balance series
+    let peak = deals[0].balance, peakTime = deals[0].time;
+    let current = null;
+    const episodes = [];
+    for (let i = 1; i < deals.length; i++) {
+      const b = deals[i].balance, t = deals[i].time;
+      if (b === null) continue;
+      if (b >= peak) {
+        if (current) { current.recoverTime = t; episodes.push(current); current = null; }
+        peak = b; peakTime = t;
+      } else {
+        if (!current) current = { peak, peakTime, trough:b, troughTime:t };
+        else if (b < current.trough) { current.trough = b; current.troughTime = t; }
+      }
+    }
+    if (current) { current.recoverTime = null; episodes.push(current); }
+    for (const e of episodes) { e.depth = e.peak - e.trough; e.pct = e.depth/e.peak*100; }
+    const top10 = [...episodes].sort((a,b)=>b.depth-a.depth).slice(0,10);
+
+    const lastTime = deals[deals.length-1].time;
+    const isoDate = t => new Date(t).toISOString().slice(0,10);
+
+    function dailyBreakdown(peakVal, peakTime, endTime){
+      const end = endTime || lastTime;
+      const byDay = new Map();
+      for (const d of deals) {
+        if (d.balance === null) continue;
+        if (d.time >= peakTime && d.time <= end) {
+          const key = d.dateStr;
+          if (!byDay.has(key) || d.balance < byDay.get(key)) byDay.set(key, d.balance);
+        }
+      }
+      return [...byDay.entries()].sort((a,b)=>a[0]<b[0]?-1:1)
+        .map(([date, bal]) => [date, Math.max(0, +(peakVal - bal).toFixed(2))]);
+    }
+
+    const ledger = top10.map(e => ({
+      peak: e.peak, peakDate: isoDate(e.peakTime),
+      trough: e.trough, troughDate: isoDate(e.troughTime),
+      depth: +e.depth.toFixed(2), pct: +e.pct.toFixed(2),
+      recovered: e.recoverTime ? isoDate(e.recoverTime) : null,
+      daily: dailyBreakdown(e.peak, e.peakTime, e.recoverTime),
+    }));
+
+    // downsample balance curve for the chart, forcing in the worst episode's peak/trough
+    const n = deals.length;
+    const step = Math.max(1, Math.floor(n/900));
+    const idxSet = new Set();
+    for (let i = 0; i < n; i += step) idxSet.add(i);
+    idxSet.add(n-1);
+    if (top10.length) {
+      const worst = top10[0];
+      // find nearest deal indices to worst.peakTime / worst.troughTime
+      let peakIdx=0, troughIdx=0, bestP=Infinity, bestT=Infinity;
+      for (let i=0;i<n;i++){
+        const dp = Math.abs(deals[i].time - worst.peakTime);
+        const dt = Math.abs(deals[i].time - worst.troughTime);
+        if (dp < bestP) { bestP = dp; peakIdx = i; }
+        if (dt < bestT) { bestT = dt; troughIdx = i; }
+      }
+      idxSet.add(peakIdx); idxSet.add(troughIdx);
+    }
+    const curve = [...idxSet].sort((a,b)=>a-b)
+      .filter(i => deals[i].balance !== null)
+      .map(i => ({ t: deals[i].dateStr, b: deals[i].balance }));
+
+    return {
+      monthlyLots, monthlyPL, ledger, curve,
+      totalLots: +totalLots.toFixed(2),
+      totalEpisodes: episodes.length,
+      episodesOver1000: episodes.filter(e=>e.depth>1000).length,
+      startingBalance: deals[0].balance,
+      finalBalance: deals[deals.length-1].balance,
+      periodStart: deals[0].dateStr,
+      periodEnd: deals[deals.length-1].dateStr,
+      totalDeals: deals.length - 1,
+      DATASET_END: deals[deals.length-1].dateStr,
+    };
+  }
+
+  // ---------------- Rendering ----------------
+  function renderChart(curve){
+    const svg = document.getElementById('balanceChart');
+    ['gridLayer','yAxis','xAxis','callout'].forEach(id => { document.getElementById(id).innerHTML = ''; });
+
+    const W=1040,H=340,padL=62,padR=24,padT=16,padB=30;
+    const plotW=W-padL-padR, plotH=H-padT-padB;
+    const t0=new Date(curve[0].t).getTime(), tN=new Date(curve[curve.length-1].t).getTime();
+    const xScale = t => padL + (tN===t0 ? 0 : ((new Date(t).getTime()-t0)/(tN-t0))) * plotW;
+    const bMin=Math.min(...curve.map(d=>d.b)), bMax=Math.max(...curve.map(d=>d.b));
+    const yPad=(bMax-bMin)*0.08 || 1;
+    const yScale = b => padT + (1 - (b-(bMin-yPad))/((bMax+yPad)-(bMin-yPad))) * plotH;
+
+    const pts = curve.map(d=>[xScale(d.t), yScale(d.b)]);
+    const linePath = pts.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(2)+','+p[1].toFixed(2)).join(' ');
+    const areaPath = linePath + ` L${pts[pts.length-1][0].toFixed(2)},${(padT+plotH).toFixed(2)} L${pts[0][0].toFixed(2)},${(padT+plotH).toFixed(2)} Z`;
+    document.getElementById('linePath').setAttribute('d', linePath);
+    document.getElementById('areaPath').setAttribute('d', areaPath);
+
+    const gridLayer = document.getElementById('gridLayer'), yAxis = document.getElementById('yAxis');
+    for (let i=0;i<=4;i++){
+      const val = (bMin-yPad) + ((bMax+yPad)-(bMin-yPad)) * (i/4);
+      const y = yScale(val);
+      const gl = document.createElementNS('http://www.w3.org/2000/svg','line');
+      gl.setAttribute('x1',padL); gl.setAttribute('x2',W-padR);
+      gl.setAttribute('y1',y.toFixed(2)); gl.setAttribute('y2',y.toFixed(2));
+      gl.setAttribute('class','grid-line'); gridLayer.appendChild(gl);
+      const tx = document.createElementNS('http://www.w3.org/2000/svg','text');
+      tx.setAttribute('x',padL-8); tx.setAttribute('y',(y+3).toFixed(2));
+      tx.setAttribute('text-anchor','end'); tx.setAttribute('class','axis-label');
+      tx.textContent = '$'+Math.round(val).toLocaleString('en-US');
+      yAxis.appendChild(tx);
+    }
+    const xAxis = document.getElementById('xAxis');
+    const startD = new Date(curve[0].t), endD = new Date(curve[curve.length-1].t);
+    const monthCursor = new Date(Date.UTC(startD.getUTCFullYear(), startD.getUTCMonth(), 1));
+    while (monthCursor <= endD) {
+      const iso = monthCursor.toISOString().slice(0,10);
+      const mt = monthCursor.getTime();
+      if (mt >= t0 && mt <= tN) {
+        const x = xScale(iso);
+        const tx = document.createElementNS('http://www.w3.org/2000/svg','text');
+        tx.setAttribute('x',x); tx.setAttribute('y',H-8);
+        tx.setAttribute('text-anchor','middle'); tx.setAttribute('class','axis-label');
+        tx.textContent = monthCursor.toLocaleString('en-US',{month:'short', timeZone:'UTC'});
+        xAxis.appendChild(tx);
+      }
+      monthCursor.setUTCMonth(monthCursor.getUTCMonth()+1);
+    }
+
+    let peakPoint = curve[0], peakIdx = 0;
+    curve.forEach((d,i)=>{ if (d.b > peakPoint.b) { peakPoint = d; peakIdx = i; } });
+    let troughPoint = peakPoint;
+    for (let i=peakIdx;i<curve.length;i++) if (curve[i].b < troughPoint.b) troughPoint = curve[i];
+    const peakXY = [xScale(peakPoint.t), yScale(peakPoint.b)];
+    const troughXY = [xScale(troughPoint.t), yScale(troughPoint.b)];
+    document.getElementById('peakDot').setAttribute('cx',peakXY[0]);
+    document.getElementById('peakDot').setAttribute('cy',peakXY[1]);
+    document.getElementById('crashDot').setAttribute('cx',troughXY[0]);
+    document.getElementById('crashDot').setAttribute('cy',troughXY[1]);
+    const peakLine = document.getElementById('peakLine');
+    peakLine.setAttribute('x1',peakXY[0]); peakLine.setAttribute('y1',peakXY[1]);
+    peakLine.setAttribute('x2',W-padR); peakLine.setAttribute('y2',peakXY[1]);
+    const peakLabel = document.getElementById('peakLabel');
+    peakLabel.setAttribute('x',W-padR); peakLabel.setAttribute('y',peakXY[1]-8);
+    peakLabel.setAttribute('text-anchor','end');
+    const reclaimed = troughPoint === peakPoint ? '' : (curve[curve.length-1].b >= peakPoint.b ? ' — reclaimed' : ' — not reclaimed');
+    peakLabel.textContent = 'peak $'+fmt0(peakPoint.b)+reclaimed;
+
+    if (troughPoint !== peakPoint) {
+      const callout = document.getElementById('callout');
+      const cx = Math.min(troughXY[0]+14, W-padR-190), cy = Math.min(troughXY[1]+18, H-padB-30);
+      const t1 = document.createElementNS('http://www.w3.org/2000/svg','text');
+      t1.setAttribute('x',cx); t1.setAttribute('y',cy); t1.setAttribute('class','callout-text callout-title');
+      t1.textContent = '−'+fmt(peakPoint.b - troughPoint.b);
+      const t2 = document.createElementNS('http://www.w3.org/2000/svg','text');
+      t2.setAttribute('x',cx); t2.setAttribute('y',cy+15); t2.setAttribute('class','callout-text callout-sub');
+      t2.textContent = shortDate(troughPoint.t) + ', deepest realized drop';
+      callout.appendChild(t1); callout.appendChild(t2);
+    }
+
+    const hoverLine = document.getElementById('hoverLine'), hoverDot = document.getElementById('hoverDot');
+    const tooltip = document.getElementById('tooltip'), shell = document.getElementById('chartShell');
+    function nearestIndex(mx){
+      let lo=0, hi=curve.length-1;
+      while (lo<hi) { const mid=(lo+hi)>>1; if (xScale(curve[mid].t) < mx) lo=mid+1; else hi=mid; }
+      return lo;
+    }
+    svg.onmousemove = (ev) => {
+      const rect = svg.getBoundingClientRect(); const scaleX = W/rect.width;
+      const mx = (ev.clientX - rect.left) * scaleX;
+      if (mx < padL || mx > W-padR) return;
+      const d = curve[nearestIndex(mx)];
+      const px = xScale(d.t), py = yScale(d.b);
+      hoverLine.setAttribute('x1',px); hoverLine.setAttribute('x2',px); hoverLine.style.opacity = 1;
+      hoverDot.setAttribute('cx',px); hoverDot.setAttribute('cy',py); hoverDot.style.opacity = 1;
+      const rectShell = shell.getBoundingClientRect(); const scaleShell = rectShell.width / W;
+      tooltip.style.left = (px*scaleShell)+'px'; tooltip.style.top = (py*scaleShell)+'px'; tooltip.style.opacity = 1;
+      tooltip.innerHTML = d.t + ' &middot; $' + fmt(d.b);
+    };
+    svg.onmouseleave = () => { hoverLine.style.opacity = 0; hoverDot.style.opacity = 0; tooltip.style.opacity = 0; };
+  }
+
+  function buildBars(barsId, labelsId, data, cls, valueFmt){
+    const barsEl = document.getElementById(barsId), labelsEl = document.getElementById(labelsId);
+    barsEl.innerHTML = ''; labelsEl.innerHTML = '';
+    if (!data.length) return;
+    const max = Math.max(...data.map(d=>d[1]), 1);
+    data.forEach(([label,val]) => {
+      const col = document.createElement('div'); col.className = 'bar-col';
+      const v = document.createElement('div'); v.className = 'bar-val'; v.textContent = valueFmt(val);
+      const bar = document.createElement('div'); bar.className = 'bar '+cls;
+      bar.style.height = Math.max(4, (val/max)*128) + 'px';
+      col.appendChild(v); col.appendChild(bar); barsEl.appendChild(col);
+      const lab = document.createElement('span'); lab.textContent = label; labelsEl.appendChild(lab);
+    });
+  }
+
+  function buildLedger(ledger, DATASET_END){
+    const tbody = document.getElementById('ledgerBody');
+    tbody.innerHTML = '';
+    if (!ledger.length) return;
+    const maxDepth = Math.max(...ledger.map(e=>e.depth));
+    ledger.forEach((e,i) => {
+      const calDays = daysBetween(e.peakDate, e.recovered || DATASET_END);
+      const periodLabel = e.recovered
+        ? `${shortDate(e.peakDate)} &rarr; ${shortDate(e.recovered)}`
+        : `${shortDate(e.peakDate)} &rarr; ongoing`;
+      const durationLabel = e.recovered
+        ? (calDays <= 0 ? 'same day' : `${calDays}d, ${e.daily.length} trading day${e.daily.length>1?'s':''}`)
+        : `${calDays}d and counting, ${e.daily.length} trading days`;
+
+      const tr = document.createElement('tr'); tr.className = 'ep-row'; if (i===0) tr.classList.add('worst');
+      tr.innerHTML = `
+        <td class="rank">${i+1}</td>
+        <td class="num">$${fmt(e.peak)}</td>
+        <td>
+          <div class="period-cell">
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+            <span class="period-text">${periodLabel}</span>
+            <span class="duration-tag">${durationLabel}</span>
+          </div>
+        </td>
+        <td class="num"><div class="depth-cell"><span class="neg">&minus;$${fmt(e.depth)}</span>
+          <div class="depth-bar-track"><div class="depth-bar-fill" style="width:${(e.depth/maxDepth*100).toFixed(0)}%"></div></div></div></td>
+        <td class="num neg">&minus;${e.pct.toFixed(2)}%</td>`;
+      tbody.appendChild(tr);
+
+      const detailTr = document.createElement('tr'); detailTr.className = 'detail-row';
+      const detailTd = document.createElement('td'); detailTd.colSpan = 5;
+      const dMax = Math.max(...e.daily.map(x=>x[1]), 1);
+      const barsHtml = e.daily.map((d,di) => {
+        const isPeak = d[1] === Math.max(...e.daily.map(x=>x[1]));
+        const isLast = di === e.daily.length-1;
+        const h = Math.max(4, (d[1]/dMax)*80);
+        const cls = ['daily-col']; if (isPeak) cls.push('is-peak'); if (isLast) cls.push('is-last');
+        const valLabel = isPeak ? '&minus;$'+Math.round(d[1]).toLocaleString('en-US')
+          : (isLast ? (e.recovered ? 'recovered' : '&minus;$'+Math.round(d[1]).toLocaleString('en-US')+' (open)') : '');
+        return `<div class="${cls.join(' ')}"><span class="daily-val">${valLabel}</span>
+                  <div class="daily-bar" style="height:${h.toFixed(0)}px"></div>
+                  <span class="daily-date">${tinyDate(d[0])}</span></div>`;
+      }).join('');
+      detailTd.innerHTML = `
+        <div class="daily-wrap">
+          <div class="daily-caption">
+            <span>Day-by-day depth below the $${fmt0(e.peak)} peak &middot; deepest on ${shortDate(e.peakDate)}</span>
+            <span>${e.recovered ? 'recovered '+shortDate(e.recovered) : 'still below peak at dataset end ('+shortDate(DATASET_END)+')'}</span>
+          </div>
+          <div class="daily-scroll"><div class="daily-bars">${barsHtml}</div></div>
+        </div>`;
+      detailTr.appendChild(detailTd);
+      tbody.appendChild(detailTr);
+      tr.addEventListener('click', () => { tr.classList.toggle('open'); detailTr.classList.toggle('open'); });
+    });
+  }
+
+  function renderResults(summary, model){
+    document.getElementById('rEaName').textContent = summary.expert;
+    document.getElementById('rSymbol').textContent = summary.symbol;
+    document.getElementById('rPeriodLine').textContent = `${model.totalDeals.toLocaleString('en-US')} deals`;
+    document.getElementById('rStartCap').textContent = '$'+fmt(model.startingBalance);
+    document.getElementById('rPeriodRange').textContent = `${shortDate(model.periodStart)} → ${shortDate(model.periodEnd)}`;
+
+    const pct = ((model.finalBalance - model.startingBalance) / model.startingBalance * 100);
+    const npEl = document.getElementById('tNetProfit');
+    npEl.textContent = (model.finalBalance>=model.startingBalance?'+':'') + fmt(model.finalBalance - model.startingBalance);
+    npEl.className = 'value ' + (model.finalBalance>=model.startingBalance ? 'good' : 'critical');
+    document.getElementById('tNetProfitSub').textContent =
+      `${pct>=0?'+':''}${pct.toFixed(1)}% on starting capital` + (summary.profitFactor ? ` · PF ${summary.profitFactor}` : '');
+
+    const worst = model.ledger[0];
+    if (worst) {
+      document.getElementById('tRealizedDD').textContent = '−'+fmt(worst.depth);
+      document.getElementById('tRealizedDDSub').textContent =
+        `−${worst.pct.toFixed(2)}% · ${shortDate(worst.peakDate)}${worst.troughDate!==worst.peakDate?' → '+shortDate(worst.troughDate):''}`;
+    } else {
+      document.getElementById('tRealizedDD').textContent = '—';
+      document.getElementById('tRealizedDDSub').textContent = 'no drawdown detected';
+    }
+
+    if (summary.equityDD.value != null) {
+      document.getElementById('tFloatingDD').textContent = '−'+fmt(summary.equityDD.value);
+      document.getElementById('tFloatingDD').nextElementSibling.querySelector = null;
+    } else {
+      document.getElementById('tFloatingDD').textContent = '—';
+    }
+    const floatSub = document.querySelector('#tFloatingDD').parentElement.querySelector('.sub');
+    if (summary.equityDD.pct != null) {
+      floatSub.innerHTML = `<span class="flag">−${summary.equityDD.pct.toFixed(2)}%</span> reported by Strategy Tester's own stat &middot; exact date not available (no per-tick equity export in this file)`;
+    }
+
+    document.getElementById('tLots').textContent = model.totalLots.toLocaleString('en-US',{minimumFractionDigits:2});
+    document.getElementById('tLotsSub').textContent = `across ${summary.totalTrades || model.totalDeals} round-trip trades`;
+
+    document.getElementById('chartTitle').textContent =
+      model.ledger[0] && model.finalBalance < model.ledger[0].peak
+        ? 'Balance curve — the peak that was never reclaimed'
+        : 'Balance curve';
+    document.getElementById('chartNote').textContent = `${model.totalDeals.toLocaleString('en-US')} deals · hover to inspect`;
+
+    renderChart(model.curve);
+    buildBars('lotsBars','lotsLabels', model.monthlyLots, 'neon', v=>v.toFixed(2));
+    buildBars('plBars','plLabels', model.monthlyPL, 'good', v=>(v>=0?'+':'')+Math.round(v).toLocaleString('en-US'));
+    buildLedger(model.ledger, model.DATASET_END);
+    document.getElementById('ledgerNote').textContent =
+      `${model.totalEpisodes} pullbacks total · ${model.episodesOver1000} exceeded $1,000`;
+
+    document.getElementById('uploadStage').classList.add('hide');
+    document.getElementById('results').classList.add('show');
+  }
+
+  // ---------------- File handling ----------------
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const errorBanner = document.getElementById('errorBanner');
+  const errorMsg = document.getElementById('errorMsg');
+  const dzTitle = document.getElementById('dzTitle');
+
+  function showError(msg){
+    errorMsg.textContent = msg;
+    errorBanner.classList.add('show');
+  }
+  function clearError(){ errorBanner.classList.remove('show'); }
+
+  function handleFile(file){
+    clearError();
+    if (!file) return;
+    if (file.size > MAX_FILE_BYTES) {
+      showError(`This file is ${(file.size/1024/1024).toFixed(0)}MB — larger than the ${MAX_FILE_BYTES/1024/1024}MB limit for a single backtest report.`);
+      return;
+    }
+    dropzone.classList.add('busy');
+    dzTitle.textContent = 'Reading report…';
+    const reader = new FileReader();
+    reader.onload = () => {
+      setTimeout(() => {
+        try {
+          const html = decodeReport(reader.result);
+          const { deals, summary } = parseReport(html);
+          const model = computeModel(deals);
+          renderResults(summary, model);
+        } catch (err) {
+          showError(err.message || 'Unrecognized file format.');
+        } finally {
+          dropzone.classList.remove('busy');
+          dzTitle.textContent = 'Drop your report.html here';
+        }
+      }, 0);
+    };
+    reader.onerror = () => {
+      showError('Could not read the file from disk.');
+      dropzone.classList.remove('busy');
+      dzTitle.textContent = 'Drop your report.html here';
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  dropzone.addEventListener('click', () => fileInput.click());
+  document.getElementById('browseBtn').addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
+  fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+  ['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(evt => dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.remove('drag'); }));
+  dropzone.addEventListener('drop', (e) => { handleFile(e.dataTransfer.files[0]); });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    document.getElementById('results').classList.remove('show');
+    document.getElementById('uploadStage').classList.remove('hide');
+    fileInput.value = '';
+    clearError();
+  });
+
+  // ---------------- Sample report (embedded, real numbers from a real backtest) ----------------
+  document.getElementById('sampleBtn').addEventListener('click', () => {
+    clearError();
+    const summary = {
+      expert: 'TrendGridBasketEA', symbol: 'XAUUSD.v',
+      netProfit: {value:44832.95}, profitFactor: '1.77',
+      equityDD: {value:30412.04, pct:34.53}, totalTrades: '8,914',
+    };
+    const model = window.__SAMPLE_MODEL__;
+    renderResults(summary, model);
+  });
+
+  window.__SAMPLE_MODEL__ = /*__SAMPLE_MODEL__*/{"monthlyLots":[["Feb",42.78],["Mar",35.71],["Apr",21.37],["May",19.06],["Jun",3.85]],"monthlyPL":[["Feb",18389.28],["Mar",12325.7],["Apr",6763.6],["May",5739.57],["Jun",1769.81]],"ledger":[{"peak":97368.05,"peakDate":"2026-05-06","trough":88216.9,"troughDate":"2026-05-06","depth":9151.15,"pct":9.4,"recovered":null,"daily":[["2026-05-06",9151.15],["2026-05-07",9151.15],["2026-05-08",8994.0],["2026-05-11",8477.25],["2026-05-12",7922.91],["2026-05-13",7749.83],["2026-05-14",7601.92],["2026-05-15",7331.15],["2026-05-18",6768.19],["2026-05-19",6078.87],["2026-05-20",5934.57],["2026-05-21",5439.91],["2026-05-22",5262.69],["2026-05-25",5139.36],["2026-05-26",5023.5],["2026-05-27",4923.0],["2026-05-28",4711.99],["2026-05-29",4568.0],["2026-06-01",4304.91],["2026-06-02",4117.11],["2026-06-03",4012.23],["2026-06-04",3742.18],["2026-06-05",3417.5],["2026-06-08",3179.33],["2026-06-09",2711.71]]},{"peak":55785.43,"peakDate":"2026-02-02","trough":51612.2,"troughDate":"2026-02-02","depth":4173.23,"pct":7.48,"recovered":"2026-02-02","daily":[["2026-02-02",4870.65]]},{"peak":91196.02,"peakDate":"2026-04-29","trough":87121.21,"troughDate":"2026-04-29","depth":4074.81,"pct":4.47,"recovered":"2026-05-06","daily":[["2026-04-29",4076.24],["2026-04-30",3947.78],["2026-05-01",3872.45],["2026-05-04",3680.09],["2026-05-05",3368.3],["2026-05-06",3154.72]]},{"peak":79554.96,"peakDate":"2026-03-24","trough":77324.93,"troughDate":"2026-03-24","depth":2230.03,"pct":2.8,"recovered":"2026-03-27","daily":[["2026-03-24",2230.03],["2026-03-25",1069.72],["2026-03-26",607.15],["2026-03-27",192.4]]},{"peak":77719.28,"peakDate":"2026-03-23","trough":75891.73,"troughDate":"2026-03-23","depth":1827.55,"pct":2.35,"recovered":"2026-03-24","daily":[["2026-03-23",1832.4],["2026-03-24",712.25]]},{"peak":86370.19,"peakDate":"2026-04-13","trough":84908.13,"troughDate":"2026-04-13","depth":1462.06,"pct":1.69,"recovered":"2026-04-20","daily":[["2026-04-13",1462.06],["2026-04-14",1462.06],["2026-04-15",1287.17],["2026-04-16",1123.24],["2026-04-17",1006.76],["2026-04-20",887.21]]},{"peak":80709.32,"peakDate":"2026-03-27","trough":79546.97,"troughDate":"2026-03-27","depth":1162.35,"pct":1.44,"recovered":"2026-03-31","daily":[["2026-03-27",1162.35],["2026-03-30",1162.35],["2026-03-31",592.3]]},{"peak":67442.05,"peakDate":"2026-02-18","trough":66311.05,"troughDate":"2026-02-18","depth":1131.0,"pct":1.68,"recovered":"2026-02-24","daily":[["2026-02-18",1180.18],["2026-02-19",1131.0],["2026-02-20",979.25],["2026-02-23",650.05],["2026-02-24",313.03]]},{"peak":70665.11,"peakDate":"2026-03-03","trough":69627.04,"troughDate":"2026-03-03","depth":1038.07,"pct":1.47,"recovered":"2026-03-05","daily":[["2026-03-03",1047.65],["2026-03-04",887.03],["2026-03-05",331.36]]},{"peak":56298.54,"peakDate":"2026-02-02","trough":55292.56,"troughDate":"2026-02-02","depth":1005.98,"pct":1.79,"recovered":"2026-02-03","daily":[["2026-02-02",1217.86],["2026-02-03",548.85]]}],"curve":[{"t":"2026-02-01","b":50000.0},{"t":"2026-02-02","b":50146.47},{"t":"2026-02-02","b":50165.62},{"t":"2026-02-02","b":50189.99},{"t":"2026-02-02","b":50256.26},{"t":"2026-02-02","b":50256.26},{"t":"2026-02-02","b":50656.7},{"t":"2026-02-02","b":50793.17},{"t":"2026-02-02","b":50489.18},{"t":"2026-02-02","b":50542.4},{"t":"2026-02-02","b":50594.5},{"t":"2026-02-02","b":50594.5},{"t":"2026-02-02","b":50594.5},{"t":"2026-02-02","b":50594.5},{"t":"2026-02-02","b":50594.5},{"t":"2026-02-02","b":54080.32},{"t":"2026-02-02","b":55766.95},{"t":"2026-02-02","b":55026.3},{"t":"2026-02-02","b":53101.19},{"t":"2026-02-02","b":51612.2},{"t":"2026-02-02","b":51612.2},{"t":"2026-02-02","b":51786.4},{"t":"2026-02-02","b":51724.37},{"t":"2026-02-02","b":51829.39},{"t":"2026-02-02","b":51774.39},{"t":"2026-02-02","b":51679.4},{"t":"2026-02-02","b":51702.4},{"t":"2026-02-02","b":51905.15},{"t":"2026-02-02","b":51940.03},{"t":"2026-02-02","b":52099.35},{"t":"2026-02-02","b":52057.01},{"t":"2026-02-02","b":52232.51},{"t":"2026-02-02","b":52259.54},{"t":"2026-02-02","b":52462.89},{"t":"2026-02-02","b":52380.89},{"t":"2026-02-02","b":52448.93},{"t":"2026-02-02","b":52447.74},{"t":"2026-02-02","b":52545.12},{"t":"2026-02-02","b":52535.01},{"t":"2026-02-02","b":52592.35},{"t":"2026-02-02","b":52674.32},{"t":"2026-02-02","b":52674.34},{"t":"2026-02-02","b":52894.33},{"t":"2026-02-02","b":52792.36},{"t":"2026-02-02","b":52840.85},{"t":"2026-02-02","b":52936.99},{"t":"2026-02-02","b":53029.59},{"t":"2026-02-02","b":53057.96},{"t":"2026-02-02","b":53108.92},{"t":"2026-02-02","b":53212.39},{"t":"2026-02-02","b":53349.39},{"t":"2026-02-02","b":53358.02},{"t":"2026-02-02","b":53459.53},{"t":"2026-02-02","b":53459.53},{"t":"2026-02-02","b":53829.37},{"t":"2026-02-02","b":53598.05},{"t":"2026-02-02","b":53623.58},{"t":"2026-02-02","b":53697.48},{"t":"2026-02-02","b":53771.74},{"t":"2026-02-02","b":53757.3},{"t":"2026-02-02","b":53866.74},{"t":"2026-02-02","b":53944.8},{"t":"2026-02-02","b":53996.05},{"t":"2026-02-02","b":54089.64},{"t":"2026-02-02","b":54168.33},{"t":"2026-02-02","b":54322.12},{"t":"2026-02-02","b":54340.48},{"t":"2026-02-02","b":54481.75},{"t":"2026-02-02","b":54540.86},{"t":"2026-02-02","b":54577.24},{"t":"2026-02-02","b":54618.17},{"t":"2026-02-02","b":54682.79},{"t":"2026-02-02","b":54720.25},{"t":"2026-02-02","b":54867.37},{"t":"2026-02-02","b":54867.37},{"t":"2026-02-02","b":55117.33},{"t":"2026-02-02","b":54911.2},{"t":"2026-02-02","b":54951.12},{"t":"2026-02-02","b":54951.12},{"t":"2026-02-02","b":54951.12},{"t":"2026-02-02","b":56070.39},{"t":"2026-02-02","b":56166.13},{"t":"2026-02-02","b":55475.24},{"t":"2026-02-02","b":55319.93},{"t":"2026-02-02","b":55322.39},{"t":"2026-02-02","b":55353.55},{"t":"2026-02-02","b":55387.37},{"t":"2026-02-02","b":55389.45},{"t":"2026-02-02","b":55467.54},{"t":"2026-02-02","b":55542.97},{"t":"2026-02-02","b":55542.97},{"t":"2026-02-02","b":55919.32},{"t":"2026-02-02","b":55699.4},{"t":"2026-02-02","b":55525.09},{"t":"2026-02-02","b":55718.04},{"t":"2026-02-02","b":55630.82},{"t":"2026-02-02","b":55764.5},{"t":"2026-02-03","b":55749.69},{"t":"2026-02-03","b":55900.31},{"t":"2026-02-03","b":55963.15},{"t":"2026-02-03","b":56001.93},{"t":"2026-02-03","b":56205.72},{"t":"2026-02-03","b":56126.71},{"t":"2026-02-03","b":56185.38},{"t":"2026-02-03","b":56271.0},{"t":"2026-02-03","b":56402.82},{"t":"2026-02-03","b":56460.19},{"t":"2026-02-03","b":56488.17},{"t":"2026-02-03","b":56524.49},{"t":"2026-02-03","b":56578.23},{"t":"2026-02-03","b":56590.12},{"t":"2026-02-03","b":56622.48},{"t":"2026-02-03","b":56743.18},{"t":"2026-02-03","b":56674.98},{"t":"2026-02-03","b":56750.63},{"t":"2026-02-03","b":56790.2},{"t":"2026-02-03","b":56826.92},{"t":"2026-02-03","b":56880.94},{"t":"2026-02-03","b":56880.94},{"t":"2026-02-03","b":57186.28},{"t":"2026-02-03","b":57001.47},{"t":"2026-02-03","b":57028.1},{"t":"2026-02-03","b":57094.67},{"t":"2026-02-03","b":57167.1},{"t":"2026-02-03","b":57219.88},{"t":"2026-02-03","b":57235.2},{"t":"2026-02-03","b":57300.83},{"t":"2026-02-03","b":57435.3},{"t":"2026-02-03","b":57603.15},{"t":"2026-02-03","b":57644.35},{"t":"2026-02-04","b":57635.77},{"t":"2026-02-04","b":57807.87},{"t":"2026-02-04","b":57858.3},{"t":"2026-02-04","b":57776.36},{"t":"2026-02-04","b":57814.52},{"t":"2026-02-04","b":57852.35},{"t":"2026-02-04","b":57937.49},{"t":"2026-02-04","b":57978.33},{"t":"2026-02-04","b":58048.35},{"t":"2026-02-04","b":58121.48},{"t":"2026-02-04","b":58150.72},{"t":"2026-02-04","b":58193.14},{"t":"2026-02-04","b":58225.08},{"t":"2026-02-04","b":58284.15},{"t":"2026-02-04","b":58328.67},{"t":"2026-02-04","b":58410.29},{"t":"2026-02-04","b":58487.96},{"t":"2026-02-04","b":58509.31},{"t":"2026-02-05","b":58648.89},{"t":"2026-02-05","b":58695.63},{"t":"2026-02-05","b":58725.53},{"t":"2026-02-05","b":58770.87},{"t":"2026-02-05","b":58770.87},{"t":"2026-02-05","b":58881.27},{"t":"2026-02-05","b":59762.88},{"t":"2026-02-05","b":59271.96},{"t":"2026-02-05","b":58814.96},{"t":"2026-02-05","b":58981.82},{"t":"2026-02-05","b":59098.78},{"t":"2026-02-05","b":59214.58},{"t":"2026-02-05","b":59203.07},{"t":"2026-02-05","b":59261.14},{"t":"2026-02-05","b":59329.89},{"t":"2026-02-05","b":59464.49},{"t":"2026-02-05","b":59430.73},{"t":"2026-02-05","b":59467.89},{"t":"2026-02-05","b":59467.89},{"t":"2026-02-05","b":59634.2},{"t":"2026-02-05","b":59543.51},{"t":"2026-02-05","b":59619.41},{"t":"2026-02-05","b":59685.42},{"t":"2026-02-05","b":59732.76},{"t":"2026-02-05","b":59758.73},{"t":"2026-02-05","b":59783.52},{"t":"2026-02-05","b":59846.83},{"t":"2026-02-05","b":59863.8},{"t":"2026-02-05","b":59924.32},{"t":"2026-02-05","b":59977.07},{"t":"2026-02-05","b":60002.22},{"t":"2026-02-05","b":60002.22},{"t":"2026-02-05","b":60226.83},{"t":"2026-02-05","b":60666.66},{"t":"2026-02-05","b":60212.16},{"t":"2026-02-05","b":60238.15},{"t":"2026-02-05","b":60314.57},{"t":"2026-02-05","b":60392.82},{"t":"2026-02-05","b":60563.37},{"t":"2026-02-06","b":60450.2},{"t":"2026-02-06","b":60558.66},{"t":"2026-02-06","b":60705.9},{"t":"2026-02-06","b":60730.15},{"t":"2026-02-06","b":60850.81},{"t":"2026-02-06","b":60897.9},{"t":"2026-02-06","b":60965.68},{"t":"2026-02-06","b":61001.62},{"t":"2026-02-06","b":61141.24},{"t":"2026-02-06","b":61175.92},{"t":"2026-02-06","b":61198.52},{"t":"2026-02-06","b":61237.38},{"t":"2026-02-06","b":61247.94},{"t":"2026-02-06","b":61395.54},{"t":"2026-02-06","b":61275.25},{"t":"2026-02-06","b":61328.28},{"t":"2026-02-06","b":61395.0},{"t":"2026-02-06","b":61490.32},{"t":"2026-02-06","b":61407.29},{"t":"2026-02-06","b":61487.16},{"t":"2026-02-06","b":61546.32},{"t":"2026-02-06","b":61617.41},{"t":"2026-02-06","b":61718.67},{"t":"2026-02-06","b":61756.7},{"t":"2026-02-06","b":61840.07},{"t":"2026-02-06","b":61897.64},{"t":"2026-02-06","b":61981.41},{"t":"2026-02-06","b":62041.99},{"t":"2026-02-06","b":62161.52},{"t":"2026-02-06","b":62227.05},{"t":"2026-02-06","b":62257.26},{"t":"2026-02-06","b":62351.75},{"t":"2026-02-06","b":62392.84},{"t":"2026-02-06","b":62423.79},{"t":"2026-02-09","b":62493.42},{"t":"2026-02-09","b":62568.17},{"t":"2026-02-09","b":62659.74},{"t":"2026-02-09","b":62729.03},{"t":"2026-02-09","b":62779.2},{"t":"2026-02-09","b":62779.2},{"t":"2026-02-09","b":63001.14},{"t":"2026-02-09","b":62808.11},{"t":"2026-02-09","b":62867.81},{"t":"2026-02-09","b":62903.16},{"t":"2026-02-09","b":62930.62},{"t":"2026-02-09","b":62974.85},{"t":"2026-02-09","b":63131.0},{"t":"2026-02-09","b":63092.81},{"t":"2026-02-09","b":63160.61},{"t":"2026-02-09","b":63149.56},{"t":"2026-02-09","b":63234.13},{"t":"2026-02-10","b":63436.05},{"t":"2026-02-10","b":63491.67},{"t":"2026-02-10","b":63593.43},{"t":"2026-02-10","b":63610.65},{"t":"2026-02-10","b":63762.19},{"t":"2026-02-10","b":63842.06},{"t":"2026-02-10","b":63893.81},{"t":"2026-02-10","b":63954.55},{"t":"2026-02-10","b":64013.02},{"t":"2026-02-10","b":63940.09},{"t":"2026-02-10","b":63974.7},{"t":"2026-02-10","b":64075.36},{"t":"2026-02-10","b":64155.53},{"t":"2026-02-10","b":64161.4},{"t":"2026-02-10","b":64181.58},{"t":"2026-02-10","b":64233.95},{"t":"2026-02-11","b":64261.2},{"t":"2026-02-11","b":64291.11},{"t":"2026-02-11","b":64378.1},{"t":"2026-02-12","b":64378.1},{"t":"2026-02-12","b":64602.44},{"t":"2026-02-12","b":64404.59},{"t":"2026-02-12","b":64474.06},{"t":"2026-02-12","b":64519.43},{"t":"2026-02-12","b":64529.83},{"t":"2026-02-12","b":64662.55},{"t":"2026-02-12","b":64704.92},{"t":"2026-02-12","b":64694.39},{"t":"2026-02-13","b":64794.79},{"t":"2026-02-13","b":64963.43},{"t":"2026-02-13","b":64913.48},{"t":"2026-02-13","b":64913.48},{"t":"2026-02-13","b":65063.25},{"t":"2026-02-13","b":65114.17},{"t":"2026-02-13","b":65196.18},{"t":"2026-02-13","b":65228.87},{"t":"2026-02-13","b":65305.08},{"t":"2026-02-13","b":65310.01},{"t":"2026-02-13","b":65358.09},{"t":"2026-02-13","b":65497.73},{"t":"2026-02-16","b":65475.64},{"t":"2026-02-16","b":65528.3},{"t":"2026-02-16","b":65572.17},{"t":"2026-02-16","b":65660.32},{"t":"2026-02-16","b":65692.52},{"t":"2026-02-16","b":65789.76},{"t":"2026-02-17","b":65748.56},{"t":"2026-02-17","b":65752.37},{"t":"2026-02-17","b":65752.37},{"t":"2026-02-17","b":66343.86},{"t":"2026-02-17","b":66385.94},{"t":"2026-02-17","b":65779.85},{"t":"2026-02-17","b":65820.53},{"t":"2026-02-17","b":65953.57},{"t":"2026-02-17","b":65979.79},{"t":"2026-02-18","b":65983.49},{"t":"2026-02-18","b":66078.48},{"t":"2026-02-18","b":66135.51},{"t":"2026-02-18","b":66135.51},{"t":"2026-02-18","b":66135.51},{"t":"2026-02-18","b":66906.55},{"t":"2026-02-18","b":67399.59},{"t":"2026-02-18","b":66746.53},{"t":"2026-02-19","b":66311.05},{"t":"2026-02-19","b":66340.74},{"t":"2026-02-19","b":66340.74},{"t":"2026-02-19","b":66776.34},{"t":"2026-02-19","b":66738.45},{"t":"2026-02-20","b":66462.8},{"t":"2026-02-20","b":66479.8},{"t":"2026-02-20","b":66554.16},{"t":"2026-02-20","b":66593.35},{"t":"2026-02-20","b":66587.51},{"t":"2026-02-20","b":66772.55},{"t":"2026-02-20","b":66731.01},{"t":"2026-02-23","b":66831.79},{"t":"2026-02-23","b":66885.74},{"t":"2026-02-23","b":66944.73},{"t":"2026-02-23","b":66974.51},{"t":"2026-02-23","b":67051.42},{"t":"2026-02-23","b":67046.86},{"t":"2026-02-23","b":67118.76},{"t":"2026-02-23","b":67125.8},{"t":"2026-02-24","b":67154.95},{"t":"2026-02-24","b":67244.73},{"t":"2026-02-24","b":67180.96},{"t":"2026-02-24","b":67284.7},{"t":"2026-02-24","b":67312.15},{"t":"2026-02-24","b":67342.48},{"t":"2026-02-24","b":67425.79},{"t":"2026-02-24","b":67382.86},{"t":"2026-02-24","b":67423.16},{"t":"2026-02-24","b":67523.49},{"t":"2026-02-24","b":67575.98},{"t":"2026-02-25","b":67599.99},{"t":"2026-02-25","b":67629.38},{"t":"2026-02-25","b":67657.28},{"t":"2026-02-25","b":67657.28},{"t":"2026-02-25","b":67972.9},{"t":"2026-02-25","b":67768.8},{"t":"2026-02-25","b":67825.77},{"t":"2026-02-25","b":67863.65},{"t":"2026-02-26","b":67938.17},{"t":"2026-02-26","b":67969.03},{"t":"2026-02-26","b":68040.25},{"t":"2026-02-26","b":68000.1},{"t":"2026-02-26","b":68027.33},{"t":"2026-02-26","b":68155.88},{"t":"2026-02-27","b":68106.76},{"t":"2026-02-27","b":68172.71},{"t":"2026-02-27","b":68202.87},{"t":"2026-02-27","b":68250.5},{"t":"2026-02-27","b":68287.52},{"t":"2026-02-27","b":68395.34},{"t":"2026-03-02","b":68431.16},{"t":"2026-03-02","b":68510.4},{"t":"2026-03-02","b":68612.7},{"t":"2026-03-02","b":68669.69},{"t":"2026-03-02","b":68686.38},{"t":"2026-03-02","b":68738.18},{"t":"2026-03-02","b":68735.08},{"t":"2026-03-02","b":68774.93},{"t":"2026-03-02","b":68774.93},{"t":"2026-03-02","b":69101.57},{"t":"2026-03-02","b":68812.25},{"t":"2026-03-02","b":68812.25},{"t":"2026-03-02","b":68984.15},{"t":"2026-03-02","b":68892.63},{"t":"2026-03-02","b":68898.26},{"t":"2026-03-02","b":69079.32},{"t":"2026-03-02","b":69044.16},{"t":"2026-03-02","b":69035.5},{"t":"2026-03-02","b":69035.5},{"t":"2026-03-02","b":69035.5},{"t":"2026-03-02","b":69755.07},{"t":"2026-03-02","b":69380.73},{"t":"2026-03-03","b":69163.37},{"t":"2026-03-03","b":69257.77},{"t":"2026-03-03","b":69320.45},{"t":"2026-03-03","b":69320.45},{"t":"2026-03-03","b":69336.44},{"t":"2026-03-03","b":69380.51},{"t":"2026-03-03","b":69387.73},{"t":"2026-03-03","b":69492.01},{"t":"2026-03-03","b":69496.54},{"t":"2026-03-03","b":69496.54},{"t":"2026-03-03","b":69496.54},{"t":"2026-03-03","b":70602.08},{"t":"2026-03-03","b":70355.73},{"t":"2026-03-03","b":69627.04},{"t":"2026-03-03","b":69678.67},{"t":"2026-03-03","b":69756.12},{"t":"2026-03-03","b":69870.76},{"t":"2026-03-04","b":69778.08},{"t":"2026-03-04","b":69888.31},{"t":"2026-03-04","b":69936.34},{"t":"2026-03-04","b":70164.61},{"t":"2026-03-04","b":70040.63},{"t":"2026-03-04","b":70102.79},{"t":"2026-03-04","b":70139.52},{"t":"2026-03-04","b":70233.1},{"t":"2026-03-04","b":70233.1},{"t":"2026-03-04","b":70472.54},{"t":"2026-03-05","b":70333.75},{"t":"2026-03-05","b":70439.0},{"t":"2026-03-05","b":70473.82},{"t":"2026-03-05","b":70473.82},{"t":"2026-03-05","b":70831.67},{"t":"2026-03-05","b":70649.02},{"t":"2026-03-05","b":70481.64},{"t":"2026-03-05","b":70573.15},{"t":"2026-03-06","b":70541.73},{"t":"2026-03-06","b":70642.52},{"t":"2026-03-06","b":70669.66},{"t":"2026-03-06","b":70703.93},{"t":"2026-03-06","b":70703.93},{"t":"2026-03-06","b":70703.93},{"t":"2026-03-06","b":71420.13},{"t":"2026-03-06","b":71016.83},{"t":"2026-03-06","b":70834.05},{"t":"2026-03-09","b":70887.85},{"t":"2026-03-09","b":71023.38},{"t":"2026-03-09","b":71019.78},{"t":"2026-03-09","b":71121.33},{"t":"2026-03-09","b":71165.49},{"t":"2026-03-09","b":71279.32},{"t":"2026-03-09","b":71410.62},{"t":"2026-03-09","b":71424.39},{"t":"2026-03-09","b":71542.66},{"t":"2026-03-09","b":71711.02},{"t":"2026-03-09","b":71711.02},{"t":"2026-03-09","b":72073.03},{"t":"2026-03-09","b":71877.43},{"t":"2026-03-09","b":71800.33},{"t":"2026-03-09","b":71899.77},{"t":"2026-03-09","b":71948.82},{"t":"2026-03-09","b":72060.44},{"t":"2026-03-10","b":72149.57},{"t":"2026-03-10","b":72219.42},{"t":"2026-03-10","b":72278.14},{"t":"2026-03-10","b":72353.25},{"t":"2026-03-10","b":72425.18},{"t":"2026-03-10","b":72470.69},{"t":"2026-03-11","b":72544.74},{"t":"2026-03-11","b":72594.8},{"t":"2026-03-11","b":72570.45},{"t":"2026-03-11","b":72670.9},{"t":"2026-03-11","b":72798.79},{"t":"2026-03-12","b":72804.2},{"t":"2026-03-12","b":72828.67},{"t":"2026-03-12","b":72855.92},{"t":"2026-03-12","b":72900.27},{"t":"2026-03-12","b":72900.27},{"t":"2026-03-12","b":73101.95},{"t":"2026-03-13","b":72925.2},{"t":"2026-03-13","b":72925.2},{"t":"2026-03-13","b":73148.55},{"t":"2026-03-13","b":72939.92},{"t":"2026-03-13","b":72939.92},{"t":"2026-03-13","b":73161.08},{"t":"2026-03-16","b":73007.42},{"t":"2026-03-16","b":73039.13},{"t":"2026-03-16","b":73145.45},{"t":"2026-03-16","b":73187.06},{"t":"2026-03-16","b":73222.8},{"t":"2026-03-16","b":73369.55},{"t":"2026-03-16","b":73194.89},{"t":"2026-03-16","b":73362.41},{"t":"2026-03-16","b":73299.97},{"t":"2026-03-16","b":73320.92},{"t":"2026-03-16","b":73384.26},{"t":"2026-03-16","b":73427.73},{"t":"2026-03-16","b":73464.06},{"t":"2026-03-16","b":73464.06},{"t":"2026-03-16","b":73757.62},{"t":"2026-03-16","b":73774.16},{"t":"2026-03-17","b":73589.33},{"t":"2026-03-17","b":73646.57},{"t":"2026-03-17","b":73716.74},{"t":"2026-03-17","b":73860.94},{"t":"2026-03-17","b":73758.6},{"t":"2026-03-17","b":73832.63},{"t":"2026-03-18","b":73834.21},{"t":"2026-03-18","b":73888.95},{"t":"2026-03-18","b":73943.26},{"t":"2026-03-19","b":74057.89},{"t":"2026-03-19","b":74153.19},{"t":"2026-03-19","b":74103.73},{"t":"2026-03-19","b":74129.11},{"t":"2026-03-19","b":74154.26},{"t":"2026-03-19","b":74223.24},{"t":"2026-03-20","b":74245.52},{"t":"2026-03-20","b":74245.52},{"t":"2026-03-20","b":74298.77},{"t":"2026-03-20","b":74385.59},{"t":"2026-03-20","b":74440.73},{"t":"2026-03-20","b":74566.75},{"t":"2026-03-20","b":74667.03},{"t":"2026-03-20","b":74799.92},{"t":"2026-03-20","b":74907.88},{"t":"2026-03-20","b":74851.64},{"t":"2026-03-20","b":74869.4},{"t":"2026-03-20","b":75100.68},{"t":"2026-03-23","b":74970.14},{"t":"2026-03-23","b":75064.14},{"t":"2026-03-23","b":75071.6},{"t":"2026-03-23","b":75133.45},{"t":"2026-03-23","b":75100.99},{"t":"2026-03-23","b":75206.18},{"t":"2026-03-23","b":75337.34},{"t":"2026-03-23","b":75408.18},{"t":"2026-03-23","b":75454.85},{"t":"2026-03-23","b":75504.45},{"t":"2026-03-23","b":75568.57},{"t":"2026-03-23","b":75634.59},{"t":"2026-03-23","b":75815.83},{"t":"2026-03-23","b":75702.33},{"t":"2026-03-23","b":75702.33},{"t":"2026-03-23","b":75702.33},{"t":"2026-03-23","b":75702.33},{"t":"2026-03-23","b":77560.45},{"t":"2026-03-23","b":77437.39},{"t":"2026-03-23","b":76433.51},{"t":"2026-03-23","b":75943.46},{"t":"2026-03-23","b":75988.48},{"t":"2026-03-23","b":76009.01},{"t":"2026-03-23","b":76085.57},{"t":"2026-03-23","b":76169.12},{"t":"2026-03-23","b":76227.05},{"t":"2026-03-23","b":76249.1},{"t":"2026-03-23","b":76451.27},{"t":"2026-03-23","b":76350.63},{"t":"2026-03-23","b":76418.96},{"t":"2026-03-23","b":76466.12},{"t":"2026-03-23","b":76567.16},{"t":"2026-03-23","b":76705.73},{"t":"2026-03-23","b":76799.98},{"t":"2026-03-23","b":76921.45},{"t":"2026-03-23","b":76945.01},{"t":"2026-03-23","b":76994.37},{"t":"2026-03-23","b":77015.19},{"t":"2026-03-24","b":77074.63},{"t":"2026-03-24","b":77109.53},{"t":"2026-03-24","b":77176.24},{"t":"2026-03-24","b":77176.24},{"t":"2026-03-24","b":77427.96},{"t":"2026-03-24","b":77275.06},{"t":"2026-03-24","b":77302.74},{"t":"2026-03-24","b":77302.74},{"t":"2026-03-24","b":77302.74},{"t":"2026-03-24","b":78592.74},{"t":"2026-03-24","b":79539.06},{"t":"2026-03-24","b":78697.44},{"t":"2026-03-24","b":77519.07},{"t":"2026-03-24","b":77403.14},{"t":"2026-03-24","b":77448.82},{"t":"2026-03-24","b":77437.43},{"t":"2026-03-24","b":77650.67},{"t":"2026-03-24","b":77596.11},{"t":"2026-03-24","b":77688.79},{"t":"2026-03-24","b":77789.21},{"t":"2026-03-24","b":77789.21},{"t":"2026-03-24","b":77789.21},{"t":"2026-03-24","b":78476.26},{"t":"2026-03-24","b":78064.68},{"t":"2026-03-24","b":77892.99},{"t":"2026-03-24","b":77915.41},{"t":"2026-03-24","b":77963.73},{"t":"2026-03-24","b":77936.1},{"t":"2026-03-24","b":78039.5},{"t":"2026-03-24","b":78093.42},{"t":"2026-03-24","b":78124.71},{"t":"2026-03-24","b":78124.71},{"t":"2026-03-24","b":78358.98},{"t":"2026-03-24","b":78228.84},{"t":"2026-03-24","b":78306.72},{"t":"2026-03-25","b":78485.24},{"t":"2026-03-25","b":78539.83},{"t":"2026-03-25","b":78607.45},{"t":"2026-03-25","b":78770.07},{"t":"2026-03-25","b":78846.41},{"t":"2026-03-25","b":78847.52},{"t":"2026-03-25","b":78847.52},{"t":"2026-03-25","b":79407.49},{"t":"2026-03-25","b":79077.04},{"t":"2026-03-26","b":79000.56},{"t":"2026-03-26","b":79055.81},{"t":"2026-03-26","b":79082.82},{"t":"2026-03-26","b":79153.9},{"t":"2026-03-26","b":79153.9},{"t":"2026-03-26","b":79456.14},{"t":"2026-03-26","b":79283.9},{"t":"2026-03-26","b":79205.91},{"t":"2026-03-26","b":79356.27},{"t":"2026-03-26","b":79264.78},{"t":"2026-03-26","b":79333.79},{"t":"2026-03-27","b":79374.86},{"t":"2026-03-27","b":79433.65},{"t":"2026-03-27","b":79431.75},{"t":"2026-03-27","b":79431.75},{"t":"2026-03-27","b":79557.27},{"t":"2026-03-27","b":80706.53},{"t":"2026-03-27","b":80213.91},{"t":"2026-03-30","b":79546.97},{"t":"2026-03-30","b":79618.0},{"t":"2026-03-30","b":79613.58},{"t":"2026-03-30","b":79721.84},{"t":"2026-03-30","b":79822.66},{"t":"2026-03-30","b":79854.08},{"t":"2026-03-30","b":79928.13},{"t":"2026-03-30","b":79876.22},{"t":"2026-03-30","b":79950.75},{"t":"2026-03-30","b":80069.89},{"t":"2026-03-30","b":80180.9},{"t":"2026-03-31","b":80141.0},{"t":"2026-03-31","b":80162.98},{"t":"2026-03-31","b":80247.72},{"t":"2026-03-31","b":80280.43},{"t":"2026-03-31","b":80413.04},{"t":"2026-03-31","b":80385.6},{"t":"2026-03-31","b":80525.86},{"t":"2026-03-31","b":80421.55},{"t":"2026-03-31","b":80547.24},{"t":"2026-03-31","b":80648.04},{"t":"2026-03-31","b":80648.04},{"t":"2026-03-31","b":80648.04},{"t":"2026-03-31","b":81186.26},{"t":"2026-03-31","b":80782.42},{"t":"2026-03-31","b":80677.62},{"t":"2026-03-31","b":80817.87},{"t":"2026-04-01","b":80752.87},{"t":"2026-04-01","b":80814.88},{"t":"2026-04-01","b":81004.63},{"t":"2026-04-01","b":81049.68},{"t":"2026-04-01","b":81095.15},{"t":"2026-04-01","b":81152.98},{"t":"2026-04-01","b":81221.15},{"t":"2026-04-01","b":81255.31},{"t":"2026-04-01","b":81360.16},{"t":"2026-04-02","b":81382.55},{"t":"2026-04-02","b":81527.65},{"t":"2026-04-02","b":81496.14},{"t":"2026-04-02","b":81506.68},{"t":"2026-04-02","b":81506.68},{"t":"2026-04-02","b":81506.68},{"t":"2026-04-02","b":82285.83},{"t":"2026-04-02","b":81904.15},{"t":"2026-04-02","b":81723.65},{"t":"2026-04-02","b":81802.22},{"t":"2026-04-02","b":81753.61},{"t":"2026-04-02","b":81853.15},{"t":"2026-04-02","b":81897.51},{"t":"2026-04-02","b":82025.63},{"t":"2026-04-02","b":82056.39},{"t":"2026-04-02","b":82096.62},{"t":"2026-04-02","b":82166.44},{"t":"2026-04-06","b":82266.68},{"t":"2026-04-06","b":82368.38},{"t":"2026-04-06","b":82481.44},{"t":"2026-04-06","b":82594.33},{"t":"2026-04-06","b":82621.8},{"t":"2026-04-06","b":82654.78},{"t":"2026-04-06","b":82764.47},{"t":"2026-04-06","b":82732.85},{"t":"2026-04-06","b":82853.45},{"t":"2026-04-06","b":82784.15},{"t":"2026-04-06","b":82784.15},{"t":"2026-04-06","b":82941.93},{"t":"2026-04-06","b":82820.02},{"t":"2026-04-06","b":82877.08},{"t":"2026-04-06","b":82959.06},{"t":"2026-04-07","b":83094.56},{"t":"2026-04-07","b":83208.75},{"t":"2026-04-07","b":83125.74},{"t":"2026-04-07","b":83195.51},{"t":"2026-04-07","b":83210.59},{"t":"2026-04-07","b":83268.23},{"t":"2026-04-07","b":83287.68},{"t":"2026-04-07","b":83244.93},{"t":"2026-04-07","b":83270.94},{"t":"2026-04-07","b":83381.83},{"t":"2026-04-08","b":83378.75},{"t":"2026-04-08","b":83440.55},{"t":"2026-04-08","b":83547.19},{"t":"2026-04-08","b":83606.39},{"t":"2026-04-08","b":83636.69},{"t":"2026-04-08","b":83651.79},{"t":"2026-04-08","b":83677.96},{"t":"2026-04-08","b":83727.97},{"t":"2026-04-08","b":83856.88},{"t":"2026-04-08","b":83830.62},{"t":"2026-04-08","b":83860.34},{"t":"2026-04-08","b":83860.34},{"t":"2026-04-08","b":84138.14},{"t":"2026-04-08","b":83960.6},{"t":"2026-04-08","b":84025.72},{"t":"2026-04-09","b":83984.97},{"t":"2026-04-09","b":84063.59},{"t":"2026-04-09","b":84126.46},{"t":"2026-04-09","b":84230.45},{"t":"2026-04-10","b":84365.9},{"t":"2026-04-10","b":84424.33},{"t":"2026-04-10","b":84547.95},{"t":"2026-04-10","b":84534.84},{"t":"2026-04-10","b":84558.03},{"t":"2026-04-13","b":84584.98},{"t":"2026-04-13","b":84697.21},{"t":"2026-04-13","b":84795.91},{"t":"2026-04-13","b":84795.91},{"t":"2026-04-13","b":84795.91},{"t":"2026-04-13","b":84795.91},{"t":"2026-04-13","b":86288.14},{"t":"2026-04-13","b":86072.71},{"t":"2026-04-13","b":85172.37},{"t":"2026-04-14","b":84960.74},{"t":"2026-04-14","b":85008.84},{"t":"2026-04-15","b":85083.02},{"t":"2026-04-15","b":85182.12},{"t":"2026-04-15","b":85211.99},{"t":"2026-04-15","b":85211.99},{"t":"2026-04-15","b":85344.02},{"t":"2026-04-15","b":85646.08},{"t":"2026-04-16","b":85246.95},{"t":"2026-04-16","b":85246.95},{"t":"2026-04-16","b":85484.67},{"t":"2026-04-16","b":85278.78},{"t":"2026-04-16","b":85303.88},{"t":"2026-04-16","b":85332.17},{"t":"2026-04-17","b":85426.0},{"t":"2026-04-17","b":85493.22},{"t":"2026-04-17","b":85473.48},{"t":"2026-04-20","b":85529.56},{"t":"2026-04-20","b":85646.37},{"t":"2026-04-20","b":85646.37},{"t":"2026-04-20","b":85646.37},{"t":"2026-04-20","b":86400.22},{"t":"2026-04-20","b":86096.09},{"t":"2026-04-20","b":85797.3},{"t":"2026-04-20","b":85844.89},{"t":"2026-04-21","b":85851.91},{"t":"2026-04-21","b":85851.91},{"t":"2026-04-21","b":86302.95},{"t":"2026-04-21","b":86176.25},{"t":"2026-04-22","b":86012.6},{"t":"2026-04-22","b":86066.03},{"t":"2026-04-23","b":86066.03},{"t":"2026-04-23","b":86312.68},{"t":"2026-04-23","b":86281.15},{"t":"2026-04-23","b":86171.43},{"t":"2026-04-23","b":86289.13},{"t":"2026-04-23","b":86240.44},{"t":"2026-04-23","b":86383.6},{"t":"2026-04-23","b":86458.99},{"t":"2026-04-23","b":86401.97},{"t":"2026-04-24","b":86438.53},{"t":"2026-04-24","b":86431.68},{"t":"2026-04-24","b":86658.88},{"t":"2026-04-24","b":86535.7},{"t":"2026-04-24","b":86602.41},{"t":"2026-04-24","b":86666.11},{"t":"2026-04-27","b":86658.19},{"t":"2026-04-27","b":86788.05},{"t":"2026-04-27","b":86806.82},{"t":"2026-04-27","b":86846.58},{"t":"2026-04-28","b":86832.69},{"t":"2026-04-28","b":86832.69},{"t":"2026-04-28","b":86832.69},{"t":"2026-04-28","b":86832.69},{"t":"2026-04-29","b":88186.06},{"t":"2026-04-29","b":90976.1},{"t":"2026-04-29","b":90841.86},{"t":"2026-04-29","b":89274.67},{"t":"2026-04-29","b":87599.6},{"t":"2026-04-29","b":87121.21},{"t":"2026-04-29","b":87235.65},{"t":"2026-04-29","b":87154.43},{"t":"2026-04-29","b":87229.48},{"t":"2026-04-30","b":87291.71},{"t":"2026-04-30","b":87291.71},{"t":"2026-04-30","b":87291.71},{"t":"2026-04-30","b":87848.79},{"t":"2026-04-30","b":88495.55},{"t":"2026-04-30","b":87840.95},{"t":"2026-05-01","b":87323.57},{"t":"2026-05-01","b":87423.93},{"t":"2026-05-01","b":87475.77},{"t":"2026-05-01","b":87475.77},{"t":"2026-05-01","b":87475.77},{"t":"2026-05-01","b":88116.36},{"t":"2026-05-01","b":87694.27},{"t":"2026-05-04","b":87563.57},{"t":"2026-05-04","b":87648.83},{"t":"2026-05-04","b":87716.31},{"t":"2026-05-04","b":87748.67},{"t":"2026-05-05","b":87827.72},{"t":"2026-05-05","b":87978.0},{"t":"2026-05-06","b":88041.3},{"t":"2026-05-06","b":88041.3},{"t":"2026-05-06","b":88041.3},{"t":"2026-05-06","b":88041.3},{"t":"2026-05-06","b":88041.3},{"t":"2026-05-06","b":88041.3},{"t":"2026-05-06","b":91244.34},{"t":"2026-05-06","b":96341.05},{"t":"2026-05-06","b":97365.55},{"t":"2026-05-06","b":97368.05},{"t":"2026-05-06","b":97299.15},{"t":"2026-05-06","b":95569.35},{"t":"2026-05-06","b":92494.36},{"t":"2026-05-06","b":89556.15},{"t":"2026-05-06","b":88216.9},{"t":"2026-05-07","b":88216.9},{"t":"2026-05-07","b":88252.62},{"t":"2026-05-07","b":88424.81},{"t":"2026-05-07","b":88314.9},{"t":"2026-05-07","b":88353.51},{"t":"2026-05-07","b":88353.51},{"t":"2026-05-07","b":88637.87},{"t":"2026-05-08","b":88374.05},{"t":"2026-05-08","b":88419.95},{"t":"2026-05-08","b":88458.61},{"t":"2026-05-08","b":88602.99},{"t":"2026-05-08","b":88663.95},{"t":"2026-05-08","b":88707.26},{"t":"2026-05-08","b":88775.74},{"t":"2026-05-08","b":88832.18},{"t":"2026-05-08","b":88925.84},{"t":"2026-05-11","b":88890.8},{"t":"2026-05-11","b":88977.14},{"t":"2026-05-11","b":89077.87},{"t":"2026-05-11","b":89116.93},{"t":"2026-05-11","b":89141.81},{"t":"2026-05-11","b":89242.98},{"t":"2026-05-11","b":89392.56},{"t":"2026-05-11","b":89483.4},{"t":"2026-05-12","b":89489.21},{"t":"2026-05-12","b":89489.21},{"t":"2026-05-12","b":89489.21},{"t":"2026-05-12","b":89489.21},{"t":"2026-05-12","b":89489.21},{"t":"2026-05-12","b":92436.24},{"t":"2026-05-12","b":92829.72},{"t":"2026-05-12","b":91583.05},{"t":"2026-05-12","b":90061.59},{"t":"2026-05-13","b":89618.22},{"t":"2026-05-13","b":89769.51},{"t":"2026-05-13","b":89702.37},{"t":"2026-05-13","b":89760.38},{"t":"2026-05-14","b":89810.36},{"t":"2026-05-14","b":89922.84},{"t":"2026-05-14","b":90017.6},{"t":"2026-05-14","b":90051.5},{"t":"2026-05-14","b":90034.77},{"t":"2026-05-15","b":90068.42},{"t":"2026-05-15","b":90197.07},{"t":"2026-05-15","b":90232.33},{"t":"2026-05-15","b":90265.81},{"t":"2026-05-15","b":90296.22},{"t":"2026-05-15","b":90390.39},{"t":"2026-05-15","b":90474.41},{"t":"2026-05-15","b":90499.73},{"t":"2026-05-18","b":90599.86},{"t":"2026-05-18","b":90658.97},{"t":"2026-05-18","b":90833.48},{"t":"2026-05-18","b":90894.52},{"t":"2026-05-18","b":91060.92},{"t":"2026-05-18","b":90963.04},{"t":"2026-05-18","b":90994.36},{"t":"2026-05-18","b":91106.6},{"t":"2026-05-18","b":91021.8},{"t":"2026-05-18","b":91118.26},{"t":"2026-05-18","b":91158.05},{"t":"2026-05-18","b":91187.61},{"t":"2026-05-18","b":91289.18},{"t":"2026-05-19","b":91341.56},{"t":"2026-05-20","b":91444.45},{"t":"2026-05-20","b":91573.36},{"t":"2026-05-20","b":91573.36},{"t":"2026-05-20","b":91838.96},{"t":"2026-05-20","b":91728.43},{"t":"2026-05-20","b":91755.1},{"t":"2026-05-20","b":91777.72},{"t":"2026-05-20","b":91828.95},{"t":"2026-05-21","b":91945.01},{"t":"2026-05-21","b":92029.6},{"t":"2026-05-21","b":92065.64},{"t":"2026-05-21","b":92195.65},{"t":"2026-05-21","b":92105.36},{"t":"2026-05-22","b":92152.7},{"t":"2026-05-22","b":92135.35},{"t":"2026-05-22","b":92201.33},{"t":"2026-05-22","b":92226.17},{"t":"2026-05-25","b":92313.42},{"t":"2026-05-25","b":92320.66},{"t":"2026-05-26","b":92344.55},{"t":"2026-05-26","b":92344.55},{"t":"2026-05-26","b":92344.55},{"t":"2026-05-26","b":92950.93},{"t":"2026-05-26","b":92549.53},{"t":"2026-05-27","b":92482.05},{"t":"2026-05-27","b":92538.52},{"t":"2026-05-27","b":92555.2},{"t":"2026-05-27","b":92716.79},{"t":"2026-05-28","b":92656.06},{"t":"2026-05-28","b":92759.84},{"t":"2026-05-29","b":92800.05},{"t":"2026-05-29","b":92889.98},{"t":"2026-05-29","b":92903.81},{"t":"2026-05-29","b":93030.92},{"t":"2026-06-01","b":93063.14},{"t":"2026-06-01","b":93177.24},{"t":"2026-06-01","b":93232.12},{"t":"2026-06-02","b":93309.14},{"t":"2026-06-02","b":93329.69},{"t":"2026-06-02","b":93329.69},{"t":"2026-06-02","b":93463.61},{"t":"2026-06-02","b":93829.6},{"t":"2026-06-02","b":93355.82},{"t":"2026-06-03","b":93388.18},{"t":"2026-06-03","b":93458.36},{"t":"2026-06-03","b":93507.84},{"t":"2026-06-03","b":93518.65},{"t":"2026-06-03","b":93607.61},{"t":"2026-06-04","b":93625.87},{"t":"2026-06-04","b":93736.06},{"t":"2026-06-04","b":93729.47},{"t":"2026-06-04","b":93802.35},{"t":"2026-06-04","b":93904.05},{"t":"2026-06-04","b":93968.27},{"t":"2026-06-05","b":94026.06},{"t":"2026-06-05","b":94046.35},{"t":"2026-06-05","b":94223.76},{"t":"2026-06-08","b":94253.87},{"t":"2026-06-08","b":94308.26},{"t":"2026-06-08","b":94339.7},{"t":"2026-06-08","b":94456.3},{"t":"2026-06-08","b":94427.6},{"t":"2026-06-08","b":94556.46},{"t":"2026-06-08","b":94612.62},{"t":"2026-06-08","b":94657.32},{"t":"2026-06-09","b":94656.34},{"t":"2026-06-09","b":94685.76},{"t":"2026-06-09","b":94803.55},{"t":"2026-06-09","b":94824.84},{"t":"2026-06-09","b":94832.95}],"totalLots":122.77,"totalEpisodes":152,"episodesOver1000":10,"startingBalance":50000.0,"finalBalance":94832.95,"periodStart":"2026-02-01","periodEnd":"2026-06-09","totalDeals":17828,"DATASET_END":"2026-06-09"};
+})();
+</script>
+</body>
+</html>
