@@ -133,6 +133,12 @@
   .tile .value.critical { color: var(--loss); }
   .tile .sub { font-size:12px; color:var(--ink-3); }
   .tile .sub .flag { color: var(--loss); font-weight:600; }
+  #csvPrompt { margin-top:6px; }
+  #csvPrompt a { font-size:11.5px; color: var(--neon-2); text-decoration:none; font-family: var(--font-mono); cursor:pointer; }
+  #csvPrompt a:hover { text-decoration:underline; }
+  #csvPrompt.done a { color: var(--ink-4); cursor:default; pointer-events:none; text-decoration:none; }
+  #csvPrompt .csv-error { color: var(--loss); font-size:11px; margin-top:4px; display:none; }
+  #csvPrompt .csv-error.show { display:block; }
 
   .panel { background: var(--glass); border:1px solid var(--line); border-radius: var(--r-lg); padding:22px 24px 18px; }
   .panel-head { display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:8px; margin-bottom:4px; }
@@ -284,7 +290,11 @@
       <div class="tile">
         <div class="label">Worst floating drop</div>
         <div class="value critical" id="tFloatingDD">—</div>
-        <div class="sub">reported by Strategy Tester's own stat &middot; exact date not available (no per-tick equity export in this file)</div>
+        <div class="sub" id="tFloatingDDSub">reported by Strategy Tester's own stat &middot; exact date not available (no per-tick equity export in this file)</div>
+        <div id="csvPrompt">
+          <a id="addCsvLink" href="#">+ Add equity CSV for the exact date</a>
+          <input type="file" id="csvInput" accept=".csv" hidden />
+        </div>
       </div>
       <div class="tile">
         <div class="label">Lots traded (opened)</div>
@@ -345,6 +355,20 @@
         <table>
           <thead><tr><th>#</th><th class="num">Peak balance</th><th>Drawdown period</th><th class="num">Depth</th><th class="num">%</th></tr></thead>
           <tbody id="ledgerBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel" id="floatingPanel" style="display:none">
+      <div class="panel-head">
+        <h3 class="panel-title">Floating drawdown ledger — from the equity CSV</h3>
+        <span class="panel-note" id="floatingLedgerNote"></span>
+      </div>
+      <div class="panel-note" style="margin-bottom:10px">Minute-level equity samples, so peak/trough/recovery are exact timestamps — not just dates.</div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>#</th><th class="num">Peak equity</th><th>Floating drawdown period</th><th class="num">Depth</th><th class="num">%</th></tr></thead>
+          <tbody id="floatingLedgerBody"></tbody>
         </table>
       </div>
     </div>
@@ -719,7 +743,95 @@
     });
   }
 
+  // ---------------- Equity CSV (optional, exact floating-drawdown dates) ----------------
+  function parseEquityCsv(text){
+    const lines = text.split(/\r?\n/).filter(l => l.trim().length);
+    if (!lines.length || !/<DATE>/i.test(lines[0])) {
+      throw new Error('This doesn\'t look like a Strategy Tester equity export — expected a <DATE> / <BALANCE> / <EQUITY> header row.');
+    }
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+      const parts = lines[i].split('\t');
+      if (parts.length < 3) continue;
+      const dateS = parts[0].trim();
+      const [datePart, timePart] = dateS.split(' ');
+      const [y,mo,d] = datePart.split('.').map(Number);
+      const [hh,mi] = (timePart||'0:0').split(':').map(Number);
+      const equity = parseFloat(parts[2]);
+      if (!isFinite(equity)) continue;
+      rows.push({
+        time: Date.UTC(y, mo-1, d, hh, mi),
+        dateStr: datePart.replace(/\./g,'-'),
+        timeStr: timePart || '00:00',
+        equity,
+      });
+    }
+    if (rows.length < 2) throw new Error('The equity export has no usable rows.');
+    return rows;
+  }
+
+  function computeEquityEpisodes(rows){
+    let peak = rows[0].equity, peakTime = rows[0].time;
+    let current = null;
+    const episodes = [];
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (r.equity >= peak) {
+        if (current) { current.recoverTime = r.time; episodes.push(current); current = null; }
+        peak = r.equity; peakTime = r.time;
+      } else {
+        if (!current) current = { peak, peakTime, trough: r.equity, troughTime: r.time };
+        else if (r.equity < current.trough) { current.trough = r.equity; current.troughTime = r.time; }
+      }
+    }
+    if (current) { current.recoverTime = null; episodes.push(current); }
+    for (const e of episodes) { e.depth = e.peak - e.trough; e.pct = e.depth/e.peak*100; }
+    return [...episodes].sort((a,b)=>b.depth-a.depth).slice(0,10);
+  }
+
+  function fmtDateTime(t){
+    const d = new Date(t);
+    return `${shortDate(d.toISOString().slice(0,10))} ${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`;
+  }
+
+  function buildFloatingLedger(episodes){
+    const tbody = document.getElementById('floatingLedgerBody');
+    tbody.innerHTML = '';
+    if (!episodes.length) return;
+    const maxDepth = Math.max(...episodes.map(e=>e.depth));
+    episodes.forEach((e,i) => {
+      const durMs = e.troughTime - e.peakTime;
+      const durMin = Math.round(durMs/60000);
+      const durLabel = durMin < 60 ? `${durMin}m` : (durMin < 1440 ? `${(durMin/60).toFixed(1)}h` : `${(durMin/1440).toFixed(1)}d`);
+      const periodLabel = e.recoverTime
+        ? `${fmtDateTime(e.peakTime)} &rarr; ${fmtDateTime(e.recoverTime)}`
+        : `${fmtDateTime(e.peakTime)} &rarr; ongoing`;
+      const tr = document.createElement('tr'); if (i===0) tr.classList.add('worst');
+      tr.innerHTML = `
+        <td class="rank">${i+1}</td>
+        <td class="num">$${fmt(e.peak)}</td>
+        <td><div class="period-cell"><span class="period-text">${periodLabel}</span><span class="duration-tag">${durLabel} to trough</span></div></td>
+        <td class="num"><div class="depth-cell"><span class="neg">&minus;$${fmt(e.depth)}</span>
+          <div class="depth-bar-track"><div class="depth-bar-fill" style="width:${(e.depth/maxDepth*100).toFixed(0)}%"></div></div></div></td>
+        <td class="num neg">&minus;${e.pct.toFixed(2)}%</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function applyEquityCsv(rows){
+    const episodes = computeEquityEpisodes(rows);
+    if (!episodes.length) return;
+    const worst = episodes[0];
+    document.getElementById('tFloatingDDSub').innerHTML =
+      `<span class="flag">−${worst.pct.toFixed(2)}%</span> ${fmtDateTime(worst.peakTime)} &rarr; ${fmtDateTime(worst.troughTime)}` +
+      (worst.recoverTime ? ` &middot; recovered ${fmtDateTime(worst.recoverTime)}` : ' &middot; still open at end of data');
+    document.getElementById('floatingLedgerNote').textContent = `${episodes.length} shown &middot; from ${rows.length.toLocaleString('en-US')} equity samples`;
+    buildFloatingLedger(episodes);
+    document.getElementById('floatingPanel').style.display = '';
+  }
+
   function renderResults(summary, model){
+    resetCsvPrompt();
     document.getElementById('rEaName').textContent = summary.expert;
     document.getElementById('rSymbol').textContent = summary.symbol;
     document.getElementById('rPeriodLine').textContent = `${model.totalDeals.toLocaleString('en-US')} deals`;
@@ -832,6 +944,61 @@
     document.getElementById('uploadStage').classList.remove('hide');
     fileInput.value = '';
     clearError();
+    resetCsvPrompt();
+  });
+
+  // ---------------- Equity CSV upload wiring ----------------
+  const csvPrompt = document.getElementById('csvPrompt');
+  const csvInput = document.getElementById('csvInput');
+  const addCsvLink = document.getElementById('addCsvLink');
+  let csvErrorEl = null;
+
+  function resetCsvPrompt(){
+    csvPrompt.classList.remove('done');
+    addCsvLink.textContent = '+ Add equity CSV for the exact date';
+    csvInput.value = '';
+    if (csvErrorEl) { csvErrorEl.remove(); csvErrorEl = null; }
+    document.getElementById('floatingPanel').style.display = 'none';
+    document.getElementById('tFloatingDDSub').innerHTML =
+      'reported by Strategy Tester\'s own stat &middot; exact date not available (no per-tick equity export in this file)';
+  }
+
+  function showCsvError(msg){
+    if (!csvErrorEl) {
+      csvErrorEl = document.createElement('div');
+      csvErrorEl.className = 'csv-error';
+      csvPrompt.appendChild(csvErrorEl);
+    }
+    csvErrorEl.textContent = msg;
+    csvErrorEl.classList.add('show');
+  }
+
+  addCsvLink.addEventListener('click', (e) => { e.preventDefault(); csvInput.click(); });
+  csvInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (csvErrorEl) csvErrorEl.classList.remove('show');
+    addCsvLink.textContent = 'Reading equity CSV…';
+    const reader = new FileReader();
+    reader.onload = () => {
+      setTimeout(() => {
+        try {
+          const text = decodeReport(reader.result);
+          const rows = parseEquityCsv(text);
+          applyEquityCsv(rows);
+          csvPrompt.classList.add('done');
+          addCsvLink.textContent = `✓ Equity CSV loaded (${rows.length.toLocaleString('en-US')} samples)`;
+        } catch (err) {
+          addCsvLink.textContent = '+ Add equity CSV for the exact date';
+          showCsvError(err.message || 'Could not read this CSV.');
+        }
+      }, 0);
+    };
+    reader.onerror = () => {
+      addCsvLink.textContent = '+ Add equity CSV for the exact date';
+      showCsvError('Could not read the file from disk.');
+    };
+    reader.readAsArrayBuffer(file);
   });
 
   // ---------------- Sample report (embedded, real numbers from a real backtest) ----------------
