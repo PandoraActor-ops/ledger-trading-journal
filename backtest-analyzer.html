@@ -220,9 +220,9 @@
   .duration-tag { font-family: var(--font-mono); font-size:10.5px; color:var(--ink-4); background:var(--glass-2); padding:1px 6px; border-radius:10px; margin-left:6px; }
 
   .daily-scroll { overflow-x:auto; }
-  .daily-bars { display:flex; align-items:flex-end; gap:6px; height:100px; min-width:max-content; padding: 18px 4px 0; }
-  .daily-col { display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:5px; width:26px; flex:none; position:relative; }
-  .daily-bar { width:14px; border-radius:2px 2px 0 0; background: var(--loss); opacity:.85; }
+  .daily-bars { display:flex; align-items:flex-end; gap:16px; height:120px; min-width:max-content; padding: 22px 8px 0; }
+  .daily-col { display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:6px; width:56px; flex:none; position:relative; }
+  .daily-bar { width:32px; border-radius:3px 3px 0 0; background: var(--loss); opacity:.85; }
   .daily-col.is-peak .daily-bar { background: var(--loss); opacity:1; box-shadow:0 0 8px rgba(255,107,107,0.45); }
   .daily-col.is-last .daily-bar { background: var(--neon); opacity:1; box-shadow:0 0 8px var(--neon-glow); }
   .daily-val { font-size:9.5px; font-family: var(--font-mono); color:var(--ink-4); position:absolute; top:-16px; white-space:nowrap; }
@@ -378,7 +378,7 @@
         <h3 class="panel-title">Floating drawdown — from the equity CSV</h3>
         <span class="panel-note" id="floatingLedgerNote"></span>
       </div>
-      <div class="panel-note" style="margin-bottom:6px">Every day of the test, deepest drawdown below the running equity peak that day &middot; ordered chronologically.</div>
+      <div class="panel-note" style="margin-bottom:6px">The 10 deepest floating drawdowns &middot; ordered chronologically, not by depth.</div>
       <div class="daily-scroll"><div class="daily-bars" id="underwaterBars"></div></div>
 
       <div class="panel-note" style="margin:18px 0 10px">Minute-level equity samples, so peak/trough/recovery below are exact timestamps — not just dates.</div>
@@ -777,41 +777,27 @@
     });
   }
 
-  function computeUnderwaterDaily(rows){
-    let peak = rows[0].equity;
-    const byDay = new Map(); // dateStr -> {depth, pct}
-    for (const r of rows) {
-      if (r.equity > peak) peak = r.equity;
-      const depth = peak - r.equity;
-      const pct = peak > 0 ? depth / peak * 100 : 0;
-      const cur = byDay.get(r.dateStr);
-      if (!cur || depth > cur.depth) byDay.set(r.dateStr, { depth, pct });
-    }
-    return [...byDay.entries()].sort((a,b)=>a[0]<b[0]?-1:1).map(([date,v]) => [date, +v.depth.toFixed(2), +v.pct.toFixed(2)]);
-  }
-
-  function buildUnderwaterChart(underwaterDaily){
+  function buildUnderwaterChart(episodes){
     const container = document.getElementById('underwaterBars');
     container.innerHTML = '';
-    if (!underwaterDaily.length) return;
-    const dMax = Math.max(...underwaterDaily.map(d=>d[1]), 1);
+    if (!episodes.length) return;
+    const chrono = [...episodes].sort((a,b)=>a.peakTime-b.peakTime);
+    const dMax = Math.max(...chrono.map(e=>e.depth), 1);
     let peakIdx = 0;
-    underwaterDaily.forEach((d,i) => { if (d[1] > underwaterDaily[peakIdx][1]) peakIdx = i; });
-    const html = underwaterDaily.map((d,i) => {
-      const [date, depth, pct] = d;
+    chrono.forEach((e,i) => { if (e.depth > chrono[peakIdx].depth) peakIdx = i; });
+    const html = chrono.map((e,i) => {
       const isPeak = i === peakIdx;
-      const isLast = i === underwaterDaily.length - 1;
-      const h = Math.max(4, (depth/dMax)*80);
-      const cls = ['daily-col']; if (isPeak) cls.push('is-peak'); if (isLast) cls.push('is-last');
-      const valLabel = isPeak ? '&minus;$'+Math.round(depth).toLocaleString('en-US')+' ('+pct.toFixed(0)+'%)' : '';
+      const h = Math.max(4, (e.depth/dMax)*80);
+      const cls = ['daily-col']; if (isPeak) cls.push('is-peak');
+      const valLabel = '&minus;$'+Math.round(e.depth).toLocaleString('en-US');
       return `<div class="${cls.join(' ')}"><span class="daily-val">${valLabel}</span>
                 <div class="daily-bar" style="height:${h.toFixed(0)}px"></div>
-                <span class="daily-date">${tinyDate(date)}</span></div>`;
+                <span class="daily-date">${tinyDate(new Date(e.peakTime).toISOString().slice(0,10))}</span></div>`;
     }).join('');
     container.innerHTML = html;
   }
 
-  function applyFloatingDataPrecomputed(episodes, underwaterDaily, nSamples){
+  function applyFloatingDataPrecomputed(episodes, nSamples){
     if (episodes.length) {
       const worst = episodes[0];
       document.getElementById('tFloatingDD').textContent = '−'+fmt(worst.depth);
@@ -821,12 +807,12 @@
     }
     document.getElementById('floatingLedgerNote').innerHTML = `${episodes.length} shown &middot; from ${nSamples.toLocaleString('en-US')} equity samples`;
     buildFloatingLedger(episodes);
-    buildUnderwaterChart(underwaterDaily);
+    buildUnderwaterChart(episodes);
     document.getElementById('floatingPanel').style.display = '';
   }
 
   function applyFloatingData(rows){
-    applyFloatingDataPrecomputed(computeEquityEpisodes(rows), computeUnderwaterDaily(rows), rows.length);
+    applyFloatingDataPrecomputed(computeEquityEpisodes(rows), rows.length);
   }
 
   function renderResults(summary, model){
@@ -1029,7 +1015,6 @@
         troughTime: new Date(e.troughTime).getTime(),
         recoverTime: e.recoverTime ? new Date(e.recoverTime).getTime() : null,
       })),
-      S.floating.underwaterDaily.map(d => [d[0], d[1], d[2]]),
       S.floating.nSamples
     );
   });
