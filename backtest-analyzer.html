@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Backtest Analyzer — Codex Trading Journal</title>
-<meta name="description" content="Drop an MT5 Strategy Tester report and get a readable drawdown ledger, balance curve, and lot/P&L breakdown — parsed entirely in your browser, nothing uploaded." />
+<meta name="description" content="Drop MT5 Strategy Tester reports and get a readable drawdown ledger, balance curve, and lot/P&L breakdown — compare up to 3 backtests side by side, parsed entirely in your browser." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -35,7 +35,8 @@
       var(--bg);
     min-height: 100vh;
   }
-  .wrap { max-width: 1120px; margin: 0 auto; padding: 48px 24px 90px; display:flex; flex-direction:column; gap:26px; }
+  .wrap { max-width: 1360px; margin: 0 auto; padding: 48px 24px 90px; display:flex; flex-direction:column; gap:26px; }
+  .wrap.is-comparing { max-width: 1560px; }
 
   .nav {
     display:flex; align-items:center; justify-content:space-between;
@@ -47,7 +48,7 @@
   .back-link { color:var(--ink-2); font-size:13px; text-decoration:none; display:flex; align-items:center; gap:6px; }
   .back-link:hover { color: var(--neon-2); }
 
-  .intro { display:flex; flex-direction:column; gap:10px; max-width: 640px; }
+  .intro { display:flex; flex-direction:column; gap:10px; max-width: 680px; }
   .eyebrow {
     font-family: var(--font-mono); font-size:11.5px; letter-spacing:.12em; text-transform:uppercase;
     color: var(--neon-2); margin:0; display:flex; align-items:center; gap:8px;
@@ -55,8 +56,24 @@
   .eyebrow::before { content:""; width:16px; height:1px; background:var(--neon-2); }
   h1 { font-family: var(--font-display); font-size:34px; font-weight:600; letter-spacing:-0.01em; margin:0; text-wrap:balance; }
   h1 .accent { color: var(--neon); }
-  .lede { color: var(--ink-2); font-size:15px; line-height:1.6; margin:0; max-width: 56ch; }
+  .lede { color: var(--ink-2); font-size:15px; line-height:1.6; margin:0; max-width: 62ch; }
   .lede b { color: var(--ink); }
+
+  .compare-select { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .compare-label { font-family: var(--font-mono); font-size:12.5px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.06em; }
+  .compare-opts { display:flex; gap:6px; background: var(--glass); border:1px solid var(--line); border-radius:999px; padding:3px; }
+  .compare-opt {
+    font-family: var(--font-mono); font-size:13px; font-weight:600; color: var(--ink-3);
+    background:none; border:none; border-radius:999px; padding:6px 16px; cursor:pointer;
+  }
+  .compare-opt:hover { color: var(--ink); }
+  .compare-opt.active { background: var(--neon); color: var(--bg); }
+  .compare-hint { font-size:12.5px; color: var(--ink-4); }
+
+  #slotsContainer { display:flex; flex-direction:column; gap:18px; }
+  .slot-block { display:flex; flex-direction:column; gap:8px; }
+  .slot-label { font-family: var(--font-mono); font-size:12px; color: var(--ink-3); text-transform:uppercase; letter-spacing:.06em; display:flex; align-items:center; gap:8px; }
+  .slot-label .slot-status { color: var(--neon-2); text-transform:none; letter-spacing:normal; }
 
   .upload-slots { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
   @media (max-width:760px){ .upload-slots{grid-template-columns:1fr;} }
@@ -66,57 +83,51 @@
     border: 1px dashed var(--line);
     border-radius: var(--r-lg);
     background: var(--glass);
-    padding: 46px 28px;
-    display:flex; flex-direction:column; align-items:center; text-align:center; gap:14px;
+    padding: 40px 24px;
+    display:flex; flex-direction:column; align-items:center; text-align:center; gap:12px;
     transition: border-color .18s ease, background .18s ease;
     cursor: pointer;
   }
   .dropzone:hover, .dropzone.drag { border-color: var(--neon); background: var(--neon-tint); }
   .dropzone.busy { cursor: wait; opacity: .7; }
   .dropzone.dz-done { border-style: solid; border-color: var(--neon); }
-  .dropzone-secondary { padding: 30px 24px; gap:10px; }
-  .dropzone-secondary .dz-icon { width:40px; height:40px; }
-  .dropzone-secondary .dz-icon svg { width:18px; height:18px; }
-  .dropzone-secondary .dz-title { font-size:14.5px; }
-  .slot-num {
-    position:absolute; top:14px; left:16px; font-family: var(--font-mono); font-size:11px;
-    color: var(--ink-4); border:1px solid var(--line); border-radius:50%; width:20px; height:20px;
-    display:flex; align-items:center; justify-content:center;
-  }
+  .dropzone-secondary { padding: 26px 22px; gap:10px; }
+  .dropzone-secondary .dz-icon { width:38px; height:38px; }
+  .dropzone-secondary .dz-icon svg { width:17px; height:17px; }
   .dz-icon {
-    width:52px; height:52px; border-radius:50%;
+    width:48px; height:48px; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
     background: var(--neon-tint); border:1px solid var(--line);
   }
-  .dz-icon svg { width:22px; height:22px; stroke:var(--neon-2); }
-  .dz-title { font-family: var(--font-display); font-size:16.5px; font-weight:600; }
-  .dz-sub { font-size:13px; color:var(--ink-3); max-width: 46ch; }
+  .dz-icon svg { width:20px; height:20px; stroke:var(--neon-2); }
+  .dz-title { font-family: var(--font-display); font-size:15.5px; font-weight:600; }
+  .dz-sub { font-size:12.5px; color:var(--ink-3); max-width: 42ch; }
   .dz-sub code { font-family: var(--font-mono); color: var(--ink-2); background: var(--glass-2); padding: 1px 5px; border-radius:4px; }
   .dz-btn {
-    margin-top:4px; font-family: var(--font-mono); font-size:12.5px; font-weight:600;
+    margin-top:2px; font-family: var(--font-mono); font-size:12px; font-weight:600;
     color:var(--bg); background: var(--neon); border:none; border-radius: 999px;
-    padding: 9px 20px; cursor:pointer; letter-spacing:.02em;
+    padding: 8px 18px; cursor:pointer; letter-spacing:.02em;
   }
   .dz-btn:hover { background: var(--neon-2); }
   .dz-btn-ghost { color: var(--neon-2); background: transparent; border: 1px solid var(--line); }
   .dz-btn-ghost:hover { background: var(--glass-2); color: var(--neon-2); }
-  .csv-stage-status { font-size:11.5px; color: var(--neon-2); font-family: var(--font-mono); min-height: 14px; }
+  .csv-stage-status { font-size:11px; color: var(--neon-2); font-family: var(--font-mono); min-height: 14px; }
   .csv-stage-status.is-error { color: var(--loss); }
   .dz-privacy { font-size:11.5px; color:var(--ink-4); display:flex; align-items:center; gap:6px; margin-top:2px; align-self:center; }
   .dz-privacy svg { width:12px; height:12px; stroke:var(--ink-4); flex:none; }
 
   .wait-status {
     display:none; align-self:center; font-size:12.5px; font-family: var(--font-mono);
-    color: var(--neon-2); align-items:center; gap:8px;
+    color: var(--neon-2); align-items:center; gap:8px; text-align:center;
   }
   .wait-status.show { display:flex; }
   .wait-status .spin {
     width:12px; height:12px; border-radius:50%; border:2px solid var(--glass-2); border-top-color: var(--neon-2);
-    animation: spin .8s linear infinite;
+    animation: spin .8s linear infinite; flex:none;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .sample-link { align-self:center; font-size:12.5px; color:var(--ink-3); }
+  .sample-link { align-self:center; font-size:12.5px; color:var(--ink-3); text-align:center; }
   .sample-link a { color: var(--neon-2); text-decoration:none; cursor:pointer; }
   .sample-link a:hover { text-decoration:underline; }
 
@@ -130,45 +141,55 @@
   .error-banner b { color: var(--loss); }
   .error-banner code { font-family: var(--font-mono); background: var(--glass-2); padding:1px 5px; border-radius:4px; }
 
-  #results { display:none; flex-direction:column; gap:22px; }
-  #results.show { display:flex; }
   #uploadStage.hide { display:none; }
 
-  .masthead {
-    display:flex; justify-content:space-between; align-items:flex-end; gap:20px; flex-wrap:wrap;
-    border-bottom:1px solid var(--line-2); padding-bottom:18px;
+  .results-grid { display:none; gap:22px; grid-template-columns: repeat(var(--cols, 1), 1fr); }
+  .results-grid.show { display:grid; }
+  @media (max-width:1100px){ .results-grid { grid-template-columns: 1fr !important; } }
+
+  .result-col {
+    display:flex; flex-direction:column; gap:18px;
+    background: var(--bg-2); border:1px solid var(--line-2); border-radius: var(--r-lg);
+    padding: 18px; min-width: 0;
   }
-  .masthead h2 { font-family: var(--font-display); font-size:26px; font-weight:600; margin:0 0 6px; letter-spacing:-.01em; }
-  .masthead .meta { color:var(--ink-3); font-size:13.5px; }
+
+  .masthead {
+    display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap;
+    border-bottom:1px solid var(--line-2); padding-bottom:16px;
+  }
+  .masthead h2 { font-family: var(--font-display); font-size:22px; font-weight:600; margin:0 0 6px; letter-spacing:-.01em; text-wrap:balance; }
+  .masthead .meta { color:var(--ink-3); font-size:12.5px; }
   .masthead .meta b { color: var(--ink-2); font-weight:600; }
+
+  .period-block { text-align:right; font-family: var(--font-mono); color:var(--ink-3); font-size:12px; line-height:1.6; }
+  .period-block .cap { font-size:17px; color:var(--ink); font-weight:600; font-family: var(--font-display); }
+
+  .top-actions { display:flex; justify-content:flex-end; }
   .reset-btn {
     font-family: var(--font-mono); font-size:12px; color:var(--ink-3); background:none;
     border:1px solid var(--line); border-radius:999px; padding:6px 14px; cursor:pointer;
   }
   .reset-btn:hover { color:var(--ink); border-color: var(--line-2); }
 
-  .period-block { text-align:right; font-family: var(--font-mono); color:var(--ink-3); font-size:12.5px; line-height:1.6; }
-  .period-block .cap { font-size:19px; color:var(--ink); font-weight:600; font-family: var(--font-display); }
-
-  .stat-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
-  @media (max-width:760px){ .stat-row{grid-template-columns:repeat(2,1fr);} }
+  .stat-row { display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:12px; }
   .tile {
     background: var(--glass); border:1px solid var(--line); border-radius: var(--r);
-    padding:16px 18px; display:flex; flex-direction:column; gap:6px;
+    padding:14px 16px; display:flex; flex-direction:column; gap:6px; min-width:0;
   }
-  .tile .label { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; font-family: var(--font-mono); }
-  .tile .value { font-family: var(--font-mono); font-size:23px; font-weight:600; color:var(--ink); }
+  .tile .label { font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; font-family: var(--font-mono); }
+  .tile .value { font-family: var(--font-mono); font-size:20px; font-weight:600; color:var(--ink); overflow-wrap:anywhere; }
   .tile .value.good { color: var(--neon-2); }
   .tile .value.critical { color: var(--loss); }
-  .tile .sub { font-size:12px; color:var(--ink-3); }
+  .tile .sub { font-size:11.5px; color:var(--ink-3); }
   .tile .sub .flag { color: var(--loss); font-weight:600; }
-  .panel { background: var(--glass); border:1px solid var(--line); border-radius: var(--r-lg); padding:22px 24px 18px; }
+
+  .panel { background: var(--glass); border:1px solid var(--line); border-radius: var(--r-lg); padding:18px 18px 14px; min-width:0; }
   .panel-head { display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:8px; margin-bottom:4px; }
-  .panel-title { font-family: var(--font-display); font-size:17px; font-weight:600; margin:0; }
-  .panel-note { font-size:12px; color:var(--ink-4); font-family: var(--font-mono); }
+  .panel-title { font-family: var(--font-display); font-size:15.5px; font-weight:600; margin:0; }
+  .panel-note { font-size:11.5px; color:var(--ink-4); font-family: var(--font-mono); }
 
   .chart-shell { position:relative; margin-top:6px; }
-  #balanceChart { width:100%; height:auto; display:block; overflow:visible; }
+  .balance-chart-svg { width:100%; height:auto; display:block; overflow:visible; }
   .axis-label { font-size:10.5px; fill:var(--ink-4); font-family: var(--font-mono); }
   .grid-line { stroke: var(--line-2); stroke-width:1; }
   .peak-line { stroke: var(--ink-4); stroke-width:1; stroke-dasharray:3 4; }
@@ -176,68 +197,65 @@
   .balance-area { fill:url(#areaGrad); }
   .crash-dot { fill: var(--loss); stroke: var(--bg-2); stroke-width:2; }
   .peak-dot { fill: var(--neon); stroke: var(--bg-2); stroke-width:2; }
-  .callout-text { font-size:12px; font-family: var(--font-mono); }
+  .callout-text { font-size:11px; font-family: var(--font-mono); }
   .callout-title { fill: var(--loss); font-weight:700; }
   .callout-sub { fill: var(--ink-3); }
-  .peak-label { fill: var(--ink-4); font-size:11px; font-family: var(--font-mono); }
+  .peak-label { fill: var(--ink-4); font-size:10.5px; font-family: var(--font-mono); }
   .hover-line { stroke: var(--ink-3); stroke-width:1; opacity:0; pointer-events:none; }
   .hover-dot { fill: var(--bg-2); stroke: var(--neon); stroke-width:2; opacity:0; pointer-events:none; }
   .tooltip {
     position:absolute; pointer-events:none; background: var(--bg-3); color:var(--ink);
-    border:1px solid var(--line); font-family: var(--font-mono); font-size:12px; padding:6px 9px;
+    border:1px solid var(--line); font-family: var(--font-mono); font-size:11.5px; padding:5px 8px;
     border-radius:6px; opacity:0; transform:translate(-50%,-130%); white-space:nowrap;
     box-shadow:0 6px 18px rgba(0,0,0,0.5); z-index:5;
   }
 
-  .duo { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
-  @media (max-width:760px){ .duo{grid-template-columns:1fr;} }
-  .bars { display:flex; align-items:flex-end; gap:10px; height:170px; padding:6px 4px 0; border-bottom:1px solid var(--line-2); position:relative; }
-  .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:6px; }
-  .bar-col .bar-val { font-size:11px; font-family: var(--font-mono); color:var(--ink-3); white-space:nowrap; }
-  .bar { width:100%; max-width:34px; border-radius:4px 4px 0 0; transition:opacity .15s ease; }
+  .duo { display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:14px; }
+  .bars { display:flex; align-items:flex-end; gap:8px; height:140px; padding:6px 4px 0; border-bottom:1px solid var(--line-2); position:relative; }
+  .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:5px; min-width:0; }
+  .bar-col .bar-val { font-size:10px; font-family: var(--font-mono); color:var(--ink-3); white-space:nowrap; }
+  .bar { width:100%; max-width:28px; border-radius:4px 4px 0 0; transition:opacity .15s ease; }
   .bar.neon { background: linear-gradient(180deg, var(--neon-2), var(--neon-deep)); box-shadow:0 0 10px rgba(31,224,122,0.25); }
   .bar.good { background: var(--neon); }
   .bar-col:hover .bar { opacity:.75; }
-  .bar-labels { display:flex; gap:10px; padding:8px 4px 0; }
-  .bar-labels span { flex:1; text-align:center; font-size:11px; color:var(--ink-4); font-family: var(--font-mono); }
+  .bar-labels { display:flex; gap:8px; padding:6px 4px 0; }
+  .bar-labels span { flex:1; text-align:center; font-size:10px; color:var(--ink-4); font-family: var(--font-mono); }
 
   .table-scroll { overflow-x:auto; margin-top:8px; }
-  table { border-collapse:collapse; width:100%; min-width:720px; }
-  thead th { text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-4); font-weight:600; padding:0 10px 8px; border-bottom:1px solid var(--line-2); font-family: var(--font-mono); }
+  table { border-collapse:collapse; width:100%; min-width:560px; }
+  thead th { text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-4); font-weight:600; padding:0 8px 8px; border-bottom:1px solid var(--line-2); font-family: var(--font-mono); }
   thead th.num, tbody td.num { text-align:right; }
-  tbody td { padding:9px 10px; font-size:13px; border-bottom:1px solid var(--line-2); color:var(--ink-2); }
+  tbody td { padding:8px; font-size:12.5px; border-bottom:1px solid var(--line-2); color:var(--ink-2); }
   tbody td.num { font-family: var(--font-mono); color:var(--ink); }
   tbody tr:last-child td { border-bottom:none; }
   tbody tr.worst td { background: var(--loss-tint); }
   .rank { color:var(--ink-4); font-family: var(--font-mono); }
   .depth-cell { display:flex; align-items:center; gap:8px; justify-content:flex-end; }
-  .depth-bar-track { width:70px; height:6px; background:var(--line-2); border-radius:3px; overflow:hidden; }
+  .depth-bar-track { width:50px; height:6px; background:var(--line-2); border-radius:3px; overflow:hidden; }
   .depth-bar-fill { height:100%; background: var(--loss); border-radius:3px; }
   .neg { color: var(--loss); font-weight:600; }
 
-  .period-cell { display:flex; align-items:center; gap:8px; }
-  .period-text { font-family: var(--font-mono); font-size:12.5px; }
-  .duration-tag { font-family: var(--font-mono); font-size:10.5px; color:var(--ink-4); background:var(--glass-2); padding:1px 6px; border-radius:10px; margin-left:6px; }
+  .period-cell { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .period-text { font-family: var(--font-mono); font-size:11.5px; }
+  .duration-tag { font-family: var(--font-mono); font-size:10px; color:var(--ink-4); background:var(--glass-2); padding:1px 6px; border-radius:10px; }
 
   .daily-scroll { overflow-x:auto; }
-  .daily-bars { display:flex; align-items:flex-end; gap:16px; height:120px; min-width:max-content; padding: 22px 8px 0; }
-  .daily-col { display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:6px; width:56px; flex:none; position:relative; }
-  .daily-bar { width:32px; border-radius:3px 3px 0 0; background: var(--loss); opacity:.85; }
+  .daily-bars { display:flex; align-items:flex-end; gap:14px; height:110px; min-width:max-content; padding: 20px 6px 0; }
+  .daily-col { display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:6px; width:48px; flex:none; position:relative; }
+  .daily-bar { width:26px; border-radius:3px 3px 0 0; background: var(--loss); opacity:.85; }
   .daily-col.is-peak .daily-bar { background: var(--loss); opacity:1; box-shadow:0 0 8px rgba(255,107,107,0.45); }
-  .daily-col.is-last .daily-bar { background: var(--neon); opacity:1; box-shadow:0 0 8px var(--neon-glow); }
-  .daily-val { font-size:9.5px; font-family: var(--font-mono); color:var(--ink-4); position:absolute; top:-16px; white-space:nowrap; }
+  .daily-val { font-size:9px; font-family: var(--font-mono); color:var(--ink-4); position:absolute; top:-15px; white-space:nowrap; }
   .daily-col.is-peak .daily-val { color: var(--loss); font-weight:600; }
-  .daily-col.is-last .daily-val { color: var(--neon-2); font-weight:600; }
-  .daily-date { font-size:9.5px; font-family: var(--font-mono); color:var(--ink-4); white-space:nowrap; transform: rotate(-40deg); transform-origin: top center; margin-top:2px; }
+  .daily-date { font-size:9px; font-family: var(--font-mono); color:var(--ink-4); white-space:nowrap; }
 
-  footer { font-size:11.5px; color:var(--ink-4); line-height:1.6; border-top:1px solid var(--line-2); padding-top:16px; }
+  footer { font-size:10.5px; color:var(--ink-4); line-height:1.6; border-top:1px solid var(--line-2); padding-top:14px; }
   footer b { color:var(--ink-3); }
 
   @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="wrap" id="pageWrap">
 
   <div class="nav">
     <div class="brand">Codex<span style="color:var(--ink-3);font-weight:400"> Trading Journal</span><span class="dot"></span><span class="sub">Backtest Analyzer</span></div>
@@ -247,171 +265,162 @@
   <div id="uploadStage">
     <div class="intro">
       <p class="eyebrow">Free tool &middot; no account needed</p>
-      <h1>Turn a raw <span class="accent">Strategy Tester report</span> into a ledger you can read.</h1>
-      <p class="lede">Drop both the <b>.html report</b> and the <b>equity CSV</b> MT5 exports after a backtest. We reconstruct the balance curve and chart the exact floating drawdown over time — entirely in your browser. Both files are required before anything is generated.</p>
+      <h1>Turn raw <span class="accent">Strategy Tester reports</span> into a ledger you can read.</h1>
+      <p class="lede">Drop the <b>.html report</b> and the <b>equity CSV</b> MT5 exports after a backtest — both required. Compare up to 3 backtests side by side. Everything is parsed entirely in your browser.</p>
     </div>
 
-    <div class="upload-slots">
-      <div class="dropzone" id="dropzone">
-        <div class="slot-num">1</div>
-        <div class="dz-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-        </div>
-        <div class="dz-title" id="dzTitle">Drop your report.html here</div>
-        <div class="dz-sub">Strategy Tester &rarr; right-click the results &rarr; <code>Save as Report</code> &middot; required</div>
-        <button class="dz-btn" id="browseBtn" type="button">Choose file</button>
-        <input type="file" id="fileInput" accept=".htm,.html,text/html" hidden />
+    <div class="compare-select">
+      <span class="compare-label">Compare</span>
+      <div class="compare-opts" id="compareOpts">
+        <button type="button" class="compare-opt active" data-count="1">1</button>
+        <button type="button" class="compare-opt" data-count="2">2</button>
+        <button type="button" class="compare-opt" data-count="3">3</button>
       </div>
-
-      <div class="dropzone dropzone-secondary" id="csvDropzone">
-        <div class="slot-num">2</div>
-        <div class="dz-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-        </div>
-        <div class="dz-title" id="csvDzTitle">Drop the equity CSV here</div>
-        <div class="dz-sub">Strategy Tester &rarr; Graph tab &rarr; export report data &middot; required, for the floating drawdown chart</div>
-        <button class="dz-btn dz-btn-ghost" id="browseCsvStageBtn" type="button">Choose CSV</button>
-        <input type="file" id="csvInputStage" accept=".csv" hidden />
-        <div class="csv-stage-status" id="csvStageStatus"></div>
-      </div>
+      <span class="compare-hint">backtest(s) side by side</span>
     </div>
+
+    <div id="slotsContainer"></div>
 
     <div class="wait-status" id="waitStatus"></div>
 
     <div class="dz-privacy">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3z"/></svg>
-      Nothing leaves your device — both files are parsed client-side, never uploaded
+      Nothing leaves your device — every file is parsed client-side, never uploaded
     </div>
 
     <div class="error-banner" id="errorBanner">
       <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M12 9v4M12 17h.01M10.3 3.9L2.5 17a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
-      <div><b>Couldn't read this file.</b> <span id="errorMsg"></span> Export it from Strategy Tester via right-click on the results tab &rarr; <code>Save as Report</code>, then try again.</div>
+      <div><b>Couldn't read this file.</b> <span id="errorMsg"></span></div>
     </div>
 
-    <div class="sample-link">Don't have a report handy? <a id="sampleBtn">Load a sample — Trend Grid Basket EA</a></div>
+    <div class="sample-link">Don't have a report handy? <a id="sampleBtn">Load a sample into the next empty slot — Trend Grid Basket EA</a></div>
   </div>
 
-  <div id="results">
+  <div class="top-actions" id="topActions" style="display:none">
+    <button class="reset-btn" id="resetBtn">&larr; Analyze another</button>
+  </div>
+  <div class="results-grid" id="resultsGrid"></div>
+
+</div>
+
+<template id="resultColumnTemplate">
+  <div class="result-col">
     <div class="masthead">
       <div>
-        <h2 id="rEaName">—</h2>
-        <p class="meta">Symbol <b id="rSymbol">—</b> &middot; <span id="rPeriodLine"></span></p>
+        <h2 data-el="rEaName">—</h2>
+        <p class="meta">Symbol <b data-el="rSymbol">—</b> &middot; <span data-el="rPeriodLine"></span></p>
       </div>
-      <div style="display:flex; align-items:flex-end; gap:16px;">
-        <div class="period-block">
-          <div class="cap" id="rStartCap">—</div>
-          <div>starting capital</div>
-          <div style="margin-top:6px" id="rPeriodRange"></div>
-        </div>
-        <button class="reset-btn" id="resetBtn">&larr; Analyze another</button>
+      <div class="period-block">
+        <div class="cap" data-el="rStartCap">—</div>
+        <div>starting capital</div>
+        <div style="margin-top:4px" data-el="rPeriodRange"></div>
       </div>
     </div>
 
     <div class="stat-row">
       <div class="tile">
         <div class="label">Net Profit</div>
-        <div class="value" id="tNetProfit">—</div>
-        <div class="sub" id="tNetProfitSub"></div>
+        <div class="value" data-el="tNetProfit">—</div>
+        <div class="sub" data-el="tNetProfitSub"></div>
       </div>
       <div class="tile">
         <div class="label">Worst realized drop</div>
-        <div class="value critical" id="tRealizedDD">—</div>
-        <div class="sub" id="tRealizedDDSub"></div>
+        <div class="value critical" data-el="tRealizedDD">—</div>
+        <div class="sub" data-el="tRealizedDDSub"></div>
       </div>
       <div class="tile">
         <div class="label">Worst floating drop</div>
-        <div class="value critical" id="tFloatingDD">—</div>
-        <div class="sub" id="tFloatingDDSub"></div>
+        <div class="value critical" data-el="tFloatingDD">—</div>
+        <div class="sub" data-el="tFloatingDDSub"></div>
       </div>
       <div class="tile">
         <div class="label">Lots traded (opened)</div>
-        <div class="value" id="tLots">—</div>
-        <div class="sub" id="tLotsSub"></div>
+        <div class="value" data-el="tLots">—</div>
+        <div class="sub" data-el="tLotsSub"></div>
       </div>
     </div>
 
     <div class="panel">
       <div class="panel-head">
-        <h3 class="panel-title" id="chartTitle">Balance curve</h3>
-        <span class="panel-note" id="chartNote">hover to inspect</span>
+        <h3 class="panel-title" data-el="chartTitle">Balance curve</h3>
+        <span class="panel-note" data-el="chartNote">hover to inspect</span>
       </div>
-      <div class="chart-shell" id="chartShell">
-        <svg id="balanceChart" viewBox="0 0 1040 340" preserveAspectRatio="xMidYMid meet">
+      <div class="chart-shell" data-el="chartShell">
+        <svg data-el="balanceChart" class="balance-chart-svg" viewBox="0 0 1040 340" preserveAspectRatio="xMidYMid meet">
           <defs>
-            <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient data-el="areaGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stop-color="var(--neon)" stop-opacity="0.30"/>
               <stop offset="100%" stop-color="var(--neon)" stop-opacity="0"/>
             </linearGradient>
           </defs>
-          <g id="gridLayer"></g>
-          <path id="areaPath" class="balance-area"></path>
-          <line id="peakLine" class="peak-line"></line>
-          <path id="linePath" class="balance-line"></path>
-          <circle id="peakDot" class="peak-dot" r="4"></circle>
-          <circle id="crashDot" class="crash-dot" r="4.5"></circle>
-          <text id="peakLabel" class="peak-label"></text>
-          <g id="callout"></g>
-          <line id="hoverLine" class="hover-line" y1="10" y2="270"></line>
-          <circle id="hoverDot" class="hover-dot" r="4.5"></circle>
-          <g id="xAxis"></g>
-          <g id="yAxis"></g>
+          <g data-el="gridLayer"></g>
+          <path data-el="areaPath" class="balance-area"></path>
+          <line data-el="peakLine" class="peak-line"></line>
+          <path data-el="linePath" class="balance-line"></path>
+          <circle data-el="peakDot" class="peak-dot" r="4"></circle>
+          <circle data-el="crashDot" class="crash-dot" r="4.5"></circle>
+          <text data-el="peakLabel" class="peak-label"></text>
+          <g data-el="callout"></g>
+          <line data-el="hoverLine" class="hover-line" y1="10" y2="270"></line>
+          <circle data-el="hoverDot" class="hover-dot" r="4.5"></circle>
+          <g data-el="xAxis"></g>
+          <g data-el="yAxis"></g>
         </svg>
-        <div class="tooltip" id="tooltip"></div>
+        <div class="tooltip" data-el="tooltip"></div>
       </div>
     </div>
 
     <div class="duo">
       <div class="panel">
-        <div class="panel-head"><h3 class="panel-title">Lots opened per month</h3></div>
-        <div class="bars" id="lotsBars"></div>
-        <div class="bar-labels" id="lotsLabels"></div>
+        <div class="panel-head"><h3 class="panel-title">Lots opened / month</h3></div>
+        <div class="bars" data-el="lotsBars"></div>
+        <div class="bar-labels" data-el="lotsLabels"></div>
       </div>
       <div class="panel">
-        <div class="panel-head"><h3 class="panel-title">Net P/L per month</h3></div>
-        <div class="bars" id="plBars"></div>
-        <div class="bar-labels" id="plLabels"></div>
+        <div class="panel-head"><h3 class="panel-title">Net P/L / month</h3></div>
+        <div class="bars" data-el="plBars"></div>
+        <div class="bar-labels" data-el="plLabels"></div>
       </div>
     </div>
 
-    <div class="panel" id="floatingPanel" style="display:none">
+    <div class="panel" data-el="floatingPanel" style="display:none">
       <div class="panel-head">
-        <h3 class="panel-title">Floating drawdown — from the equity CSV</h3>
-        <span class="panel-note" id="floatingLedgerNote"></span>
+        <h3 class="panel-title">Floating drawdown — equity CSV</h3>
+        <span class="panel-note" data-el="floatingLedgerNote"></span>
       </div>
-      <div class="panel-note" style="margin-bottom:6px">The 10 deepest floating drawdowns &middot; ordered chronologically, not by depth.</div>
-      <div class="daily-scroll"><div class="daily-bars" id="underwaterBars"></div></div>
+      <div class="panel-note" style="margin-bottom:6px">10 deepest floating drawdowns &middot; ordered chronologically.</div>
+      <div class="daily-scroll"><div class="daily-bars" data-el="underwaterBars"></div></div>
 
-      <div class="panel-note" style="margin:18px 0 10px">Minute-level equity samples, so peak/trough/recovery below are exact timestamps — not just dates.</div>
+      <div class="panel-note" style="margin:16px 0 8px">Minute-level equity samples — exact timestamps, not just dates.</div>
       <div class="table-scroll">
         <table>
-          <thead><tr><th>#</th><th class="num">Peak equity</th><th>Floating drawdown period</th><th class="num">Depth</th><th class="num">%</th></tr></thead>
-          <tbody id="floatingLedgerBody"></tbody>
+          <thead><tr><th>#</th><th class="num">Peak</th><th>Period</th><th class="num">Depth</th><th class="num">%</th></tr></thead>
+          <tbody data-el="floatingLedgerBody"></tbody>
         </table>
       </div>
     </div>
 
     <footer>
-      <b>Reading notes —</b> "Realized" figures are reconstructed from the report's Balance column (deal-by-deal). "Floating" drawdown comes from the equity CSV's
-      per-minute samples — it reflects unrealized loss while a position/basket was still open, which is why it's usually deeper than the realized number: price can
-      recover before a losing basket is actually closed. Lot totals count entry ("in") deals only; pending orders are excluded throughout.
+      <b>Reading notes —</b> "Realized" figures come from the report's Balance column (deal-by-deal). "Floating" drawdown comes from the equity CSV's
+      per-minute samples and reflects unrealized loss while a position/basket was still open. Lot totals count entry ("in") deals only; pending orders are excluded.
     </footer>
   </div>
-
-</div>
+</template>
 
 <script>
 (function(){
   'use strict';
 
-  const MAX_FILE_BYTES = 60 * 1024 * 1024; // 60MB safety cap
+  const MAX_FILE_BYTES = 60 * 1024 * 1024; // 60MB safety cap per file
   const fmt = n => n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
   const fmt0 = n => n.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:2});
   const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const shortDate = iso => { const [y,m,d]=iso.split('-').map(Number); return `${d} ${MONTHS[m-1]}`; };
   const tinyDate   = iso => { const [y,m,d]=iso.split('-').map(Number); return `${MONTHS[m-1]} ${d}`; };
   const daysBetween = (a,b) => Math.round((new Date(b) - new Date(a)) / 86400000);
+  const $ = (scope, key) => scope.querySelector(`[data-el="${key}"]`);
 
-  // ---------------- Parsing ----------------
+  // ================= Parsing (report .html) =================
   function decodeReport(arrayBuffer){
     const bytes = new Uint8Array(arrayBuffer);
     let encoding = 'utf-8';
@@ -482,7 +491,7 @@
     return { deals, summary: { netProfit, balanceDD, equityDD, profitFactor, totalTrades, expert, symbol: symbolField } };
   }
 
-  // ---------------- Model computation ----------------
+  // ================= Model computation (report) =================
   function computeModel(deals){
     const monthlyLotsMap = new Map();
     const monthlyPLMap = new Map();
@@ -504,7 +513,6 @@
     const monthlyLots = monthKeys.map(k => [monthLabel(k), +(monthlyLotsMap.get(k)||0).toFixed(2)]);
     const monthlyPL   = monthKeys.map(k => [monthLabel(k), +(monthlyPLMap.get(k)||0).toFixed(2)]);
 
-    // drawdown episodes on the realized balance series
     let peak = deals[0].balance, peakTime = deals[0].time;
     let current = null;
     const episodes = [];
@@ -523,32 +531,14 @@
     for (const e of episodes) { e.depth = e.peak - e.trough; e.pct = e.depth/e.peak*100; }
     const top10 = [...episodes].sort((a,b)=>b.depth-a.depth).slice(0,10);
 
-    const lastTime = deals[deals.length-1].time;
     const isoDate = t => new Date(t).toISOString().slice(0,10);
-
-    function dailyBreakdown(peakVal, peakTime, endTime){
-      const end = endTime || lastTime;
-      const byDay = new Map();
-      for (const d of deals) {
-        if (d.balance === null) continue;
-        if (d.time >= peakTime && d.time <= end) {
-          const key = d.dateStr;
-          if (!byDay.has(key) || d.balance < byDay.get(key)) byDay.set(key, d.balance);
-        }
-      }
-      return [...byDay.entries()].sort((a,b)=>a[0]<b[0]?-1:1)
-        .map(([date, bal]) => [date, Math.max(0, +(peakVal - bal).toFixed(2))]);
-    }
-
     const ledger = top10.map(e => ({
       peak: e.peak, peakDate: isoDate(e.peakTime),
       trough: e.trough, troughDate: isoDate(e.troughTime),
       depth: +e.depth.toFixed(2), pct: +e.pct.toFixed(2),
       recovered: e.recoverTime ? isoDate(e.recoverTime) : null,
-      daily: dailyBreakdown(e.peak, e.peakTime, e.recoverTime),
     }));
 
-    // downsample balance curve for the chart, forcing in the worst episode's peak/trough
     const n = deals.length;
     const step = Math.max(1, Math.floor(n/900));
     const idxSet = new Set();
@@ -556,7 +546,6 @@
     idxSet.add(n-1);
     if (top10.length) {
       const worst = top10[0];
-      // find nearest deal indices to worst.peakTime / worst.troughTime
       let peakIdx=0, troughIdx=0, bestP=Infinity, bestT=Infinity;
       for (let i=0;i<n;i++){
         const dp = Math.abs(deals[i].time - worst.peakTime);
@@ -573,8 +562,6 @@
     return {
       monthlyLots, monthlyPL, ledger, curve,
       totalLots: +totalLots.toFixed(2),
-      totalEpisodes: episodes.length,
-      episodesOver1000: episodes.filter(e=>e.depth>1000).length,
       startingBalance: deals[0].balance,
       finalBalance: deals[deals.length-1].balance,
       periodStart: deals[0].dateStr,
@@ -584,125 +571,7 @@
     };
   }
 
-  // ---------------- Rendering ----------------
-  function renderChart(curve){
-    const svg = document.getElementById('balanceChart');
-    ['gridLayer','yAxis','xAxis','callout'].forEach(id => { document.getElementById(id).innerHTML = ''; });
-
-    const W=1040,H=340,padL=62,padR=24,padT=16,padB=30;
-    const plotW=W-padL-padR, plotH=H-padT-padB;
-    const t0=new Date(curve[0].t).getTime(), tN=new Date(curve[curve.length-1].t).getTime();
-    const xScale = t => padL + (tN===t0 ? 0 : ((new Date(t).getTime()-t0)/(tN-t0))) * plotW;
-    const bMin=Math.min(...curve.map(d=>d.b)), bMax=Math.max(...curve.map(d=>d.b));
-    const yPad=(bMax-bMin)*0.08 || 1;
-    const yScale = b => padT + (1 - (b-(bMin-yPad))/((bMax+yPad)-(bMin-yPad))) * plotH;
-
-    const pts = curve.map(d=>[xScale(d.t), yScale(d.b)]);
-    const linePath = pts.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(2)+','+p[1].toFixed(2)).join(' ');
-    const areaPath = linePath + ` L${pts[pts.length-1][0].toFixed(2)},${(padT+plotH).toFixed(2)} L${pts[0][0].toFixed(2)},${(padT+plotH).toFixed(2)} Z`;
-    document.getElementById('linePath').setAttribute('d', linePath);
-    document.getElementById('areaPath').setAttribute('d', areaPath);
-
-    const gridLayer = document.getElementById('gridLayer'), yAxis = document.getElementById('yAxis');
-    for (let i=0;i<=4;i++){
-      const val = (bMin-yPad) + ((bMax+yPad)-(bMin-yPad)) * (i/4);
-      const y = yScale(val);
-      const gl = document.createElementNS('http://www.w3.org/2000/svg','line');
-      gl.setAttribute('x1',padL); gl.setAttribute('x2',W-padR);
-      gl.setAttribute('y1',y.toFixed(2)); gl.setAttribute('y2',y.toFixed(2));
-      gl.setAttribute('class','grid-line'); gridLayer.appendChild(gl);
-      const tx = document.createElementNS('http://www.w3.org/2000/svg','text');
-      tx.setAttribute('x',padL-8); tx.setAttribute('y',(y+3).toFixed(2));
-      tx.setAttribute('text-anchor','end'); tx.setAttribute('class','axis-label');
-      tx.textContent = '$'+Math.round(val).toLocaleString('en-US');
-      yAxis.appendChild(tx);
-    }
-    const xAxis = document.getElementById('xAxis');
-    const startD = new Date(curve[0].t), endD = new Date(curve[curve.length-1].t);
-    const monthCursor = new Date(Date.UTC(startD.getUTCFullYear(), startD.getUTCMonth(), 1));
-    while (monthCursor <= endD) {
-      const iso = monthCursor.toISOString().slice(0,10);
-      const mt = monthCursor.getTime();
-      if (mt >= t0 && mt <= tN) {
-        const x = xScale(iso);
-        const tx = document.createElementNS('http://www.w3.org/2000/svg','text');
-        tx.setAttribute('x',x); tx.setAttribute('y',H-8);
-        tx.setAttribute('text-anchor','middle'); tx.setAttribute('class','axis-label');
-        tx.textContent = monthCursor.toLocaleString('en-US',{month:'short', timeZone:'UTC'});
-        xAxis.appendChild(tx);
-      }
-      monthCursor.setUTCMonth(monthCursor.getUTCMonth()+1);
-    }
-
-    let peakPoint = curve[0], peakIdx = 0;
-    curve.forEach((d,i)=>{ if (d.b > peakPoint.b) { peakPoint = d; peakIdx = i; } });
-    let troughPoint = peakPoint;
-    for (let i=peakIdx;i<curve.length;i++) if (curve[i].b < troughPoint.b) troughPoint = curve[i];
-    const peakXY = [xScale(peakPoint.t), yScale(peakPoint.b)];
-    const troughXY = [xScale(troughPoint.t), yScale(troughPoint.b)];
-    document.getElementById('peakDot').setAttribute('cx',peakXY[0]);
-    document.getElementById('peakDot').setAttribute('cy',peakXY[1]);
-    document.getElementById('crashDot').setAttribute('cx',troughXY[0]);
-    document.getElementById('crashDot').setAttribute('cy',troughXY[1]);
-    const peakLine = document.getElementById('peakLine');
-    peakLine.setAttribute('x1',peakXY[0]); peakLine.setAttribute('y1',peakXY[1]);
-    peakLine.setAttribute('x2',W-padR); peakLine.setAttribute('y2',peakXY[1]);
-    const peakLabel = document.getElementById('peakLabel');
-    peakLabel.setAttribute('x',W-padR); peakLabel.setAttribute('y',peakXY[1]-8);
-    peakLabel.setAttribute('text-anchor','end');
-    const reclaimed = troughPoint === peakPoint ? '' : (curve[curve.length-1].b >= peakPoint.b ? ' — reclaimed' : ' — not reclaimed');
-    peakLabel.textContent = 'peak $'+fmt0(peakPoint.b)+reclaimed;
-
-    if (troughPoint !== peakPoint) {
-      const callout = document.getElementById('callout');
-      const cx = Math.min(troughXY[0]+14, W-padR-190), cy = Math.min(troughXY[1]+18, H-padB-30);
-      const t1 = document.createElementNS('http://www.w3.org/2000/svg','text');
-      t1.setAttribute('x',cx); t1.setAttribute('y',cy); t1.setAttribute('class','callout-text callout-title');
-      t1.textContent = '−'+fmt(peakPoint.b - troughPoint.b);
-      const t2 = document.createElementNS('http://www.w3.org/2000/svg','text');
-      t2.setAttribute('x',cx); t2.setAttribute('y',cy+15); t2.setAttribute('class','callout-text callout-sub');
-      t2.textContent = shortDate(troughPoint.t) + ', deepest realized drop';
-      callout.appendChild(t1); callout.appendChild(t2);
-    }
-
-    const hoverLine = document.getElementById('hoverLine'), hoverDot = document.getElementById('hoverDot');
-    const tooltip = document.getElementById('tooltip'), shell = document.getElementById('chartShell');
-    function nearestIndex(mx){
-      let lo=0, hi=curve.length-1;
-      while (lo<hi) { const mid=(lo+hi)>>1; if (xScale(curve[mid].t) < mx) lo=mid+1; else hi=mid; }
-      return lo;
-    }
-    svg.onmousemove = (ev) => {
-      const rect = svg.getBoundingClientRect(); const scaleX = W/rect.width;
-      const mx = (ev.clientX - rect.left) * scaleX;
-      if (mx < padL || mx > W-padR) return;
-      const d = curve[nearestIndex(mx)];
-      const px = xScale(d.t), py = yScale(d.b);
-      hoverLine.setAttribute('x1',px); hoverLine.setAttribute('x2',px); hoverLine.style.opacity = 1;
-      hoverDot.setAttribute('cx',px); hoverDot.setAttribute('cy',py); hoverDot.style.opacity = 1;
-      const rectShell = shell.getBoundingClientRect(); const scaleShell = rectShell.width / W;
-      tooltip.style.left = (px*scaleShell)+'px'; tooltip.style.top = (py*scaleShell)+'px'; tooltip.style.opacity = 1;
-      tooltip.innerHTML = d.t + ' &middot; $' + fmt(d.b);
-    };
-    svg.onmouseleave = () => { hoverLine.style.opacity = 0; hoverDot.style.opacity = 0; tooltip.style.opacity = 0; };
-  }
-
-  function buildBars(barsId, labelsId, data, cls, valueFmt){
-    const barsEl = document.getElementById(barsId), labelsEl = document.getElementById(labelsId);
-    barsEl.innerHTML = ''; labelsEl.innerHTML = '';
-    if (!data.length) return;
-    const max = Math.max(...data.map(d=>d[1]), 1);
-    data.forEach(([label,val]) => {
-      const col = document.createElement('div'); col.className = 'bar-col';
-      const v = document.createElement('div'); v.className = 'bar-val'; v.textContent = valueFmt(val);
-      const bar = document.createElement('div'); bar.className = 'bar '+cls;
-      bar.style.height = Math.max(4, (val/max)*128) + 'px';
-      col.appendChild(v); col.appendChild(bar); barsEl.appendChild(col);
-      const lab = document.createElement('span'); lab.textContent = label; labelsEl.appendChild(lab);
-    });
-  }
-
-  // ---------------- Equity CSV (required, exact floating-drawdown dates) ----------------
+  // ================= Parsing (equity CSV) =================
   function parseEquityCsv(text){
     const lines = text.split(/\r?\n/).filter(l => l.trim().length);
     if (!lines.length || !/<DATE>/i.test(lines[0])) {
@@ -753,8 +622,126 @@
     return `${shortDate(d.toISOString().slice(0,10))} ${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`;
   }
 
-  function buildFloatingLedger(episodes){
-    const tbody = document.getElementById('floatingLedgerBody');
+  // ================= Rendering (scoped to a .result-col element) =================
+  function renderChartIn(scope, curve){
+    const svg = $(scope,'balanceChart');
+    ['gridLayer','yAxis','xAxis','callout'].forEach(k => { $(scope,k).innerHTML = ''; });
+
+    const W=1040,H=340,padL=62,padR=24,padT=16,padB=30;
+    const plotW=W-padL-padR, plotH=H-padT-padB;
+    const t0=new Date(curve[0].t).getTime(), tN=new Date(curve[curve.length-1].t).getTime();
+    const xScale = t => padL + (tN===t0 ? 0 : ((new Date(t).getTime()-t0)/(tN-t0))) * plotW;
+    const bMin=Math.min(...curve.map(d=>d.b)), bMax=Math.max(...curve.map(d=>d.b));
+    const yPad=(bMax-bMin)*0.08 || 1;
+    const yScale = b => padT + (1 - (b-(bMin-yPad))/((bMax+yPad)-(bMin-yPad))) * plotH;
+
+    const pts = curve.map(d=>[xScale(d.t), yScale(d.b)]);
+    const linePath = pts.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(2)+','+p[1].toFixed(2)).join(' ');
+    const areaPath = linePath + ` L${pts[pts.length-1][0].toFixed(2)},${(padT+plotH).toFixed(2)} L${pts[0][0].toFixed(2)},${(padT+plotH).toFixed(2)} Z`;
+    $(scope,'linePath').setAttribute('d', linePath);
+    $(scope,'areaPath').setAttribute('d', areaPath);
+
+    const gridLayer = $(scope,'gridLayer'), yAxis = $(scope,'yAxis');
+    for (let i=0;i<=4;i++){
+      const val = (bMin-yPad) + ((bMax+yPad)-(bMin-yPad)) * (i/4);
+      const y = yScale(val);
+      const gl = document.createElementNS('http://www.w3.org/2000/svg','line');
+      gl.setAttribute('x1',padL); gl.setAttribute('x2',W-padR);
+      gl.setAttribute('y1',y.toFixed(2)); gl.setAttribute('y2',y.toFixed(2));
+      gl.setAttribute('class','grid-line'); gridLayer.appendChild(gl);
+      const tx = document.createElementNS('http://www.w3.org/2000/svg','text');
+      tx.setAttribute('x',padL-8); tx.setAttribute('y',(y+3).toFixed(2));
+      tx.setAttribute('text-anchor','end'); tx.setAttribute('class','axis-label');
+      tx.textContent = '$'+Math.round(val).toLocaleString('en-US');
+      yAxis.appendChild(tx);
+    }
+    const xAxis = $(scope,'xAxis');
+    const startD = new Date(curve[0].t), endD = new Date(curve[curve.length-1].t);
+    const monthCursor = new Date(Date.UTC(startD.getUTCFullYear(), startD.getUTCMonth(), 1));
+    while (monthCursor <= endD) {
+      const iso = monthCursor.toISOString().slice(0,10);
+      const mt = monthCursor.getTime();
+      if (mt >= t0 && mt <= tN) {
+        const x = xScale(iso);
+        const tx = document.createElementNS('http://www.w3.org/2000/svg','text');
+        tx.setAttribute('x',x); tx.setAttribute('y',H-8);
+        tx.setAttribute('text-anchor','middle'); tx.setAttribute('class','axis-label');
+        tx.textContent = monthCursor.toLocaleString('en-US',{month:'short', timeZone:'UTC'});
+        xAxis.appendChild(tx);
+      }
+      monthCursor.setUTCMonth(monthCursor.getUTCMonth()+1);
+    }
+
+    let peakPoint = curve[0], peakIdx = 0;
+    curve.forEach((d,i)=>{ if (d.b > peakPoint.b) { peakPoint = d; peakIdx = i; } });
+    let troughPoint = peakPoint;
+    for (let i=peakIdx;i<curve.length;i++) if (curve[i].b < troughPoint.b) troughPoint = curve[i];
+    const peakXY = [xScale(peakPoint.t), yScale(peakPoint.b)];
+    const troughXY = [xScale(troughPoint.t), yScale(troughPoint.b)];
+    $(scope,'peakDot').setAttribute('cx',peakXY[0]);
+    $(scope,'peakDot').setAttribute('cy',peakXY[1]);
+    $(scope,'crashDot').setAttribute('cx',troughXY[0]);
+    $(scope,'crashDot').setAttribute('cy',troughXY[1]);
+    const peakLine = $(scope,'peakLine');
+    peakLine.setAttribute('x1',peakXY[0]); peakLine.setAttribute('y1',peakXY[1]);
+    peakLine.setAttribute('x2',W-padR); peakLine.setAttribute('y2',peakXY[1]);
+    const peakLabel = $(scope,'peakLabel');
+    peakLabel.setAttribute('x',W-padR); peakLabel.setAttribute('y',peakXY[1]-8);
+    peakLabel.setAttribute('text-anchor','end');
+    const reclaimed = troughPoint === peakPoint ? '' : (curve[curve.length-1].b >= peakPoint.b ? ' — reclaimed' : ' — not reclaimed');
+    peakLabel.textContent = 'peak $'+fmt0(peakPoint.b)+reclaimed;
+
+    if (troughPoint !== peakPoint) {
+      const callout = $(scope,'callout');
+      const cx = Math.min(troughXY[0]+14, W-padR-190), cy = Math.min(troughXY[1]+18, H-padB-30);
+      const t1 = document.createElementNS('http://www.w3.org/2000/svg','text');
+      t1.setAttribute('x',cx); t1.setAttribute('y',cy); t1.setAttribute('class','callout-text callout-title');
+      t1.textContent = '−'+fmt(peakPoint.b - troughPoint.b);
+      const t2 = document.createElementNS('http://www.w3.org/2000/svg','text');
+      t2.setAttribute('x',cx); t2.setAttribute('y',cy+15); t2.setAttribute('class','callout-text callout-sub');
+      t2.textContent = shortDate(troughPoint.t) + ', deepest realized drop';
+      callout.appendChild(t1); callout.appendChild(t2);
+    }
+
+    const hoverLine = $(scope,'hoverLine'), hoverDot = $(scope,'hoverDot');
+    const tooltip = $(scope,'tooltip'), shell = $(scope,'chartShell');
+    function nearestIndex(mx){
+      let lo=0, hi=curve.length-1;
+      while (lo<hi) { const mid=(lo+hi)>>1; if (xScale(curve[mid].t) < mx) lo=mid+1; else hi=mid; }
+      return lo;
+    }
+    svg.onmousemove = (ev) => {
+      const rect = svg.getBoundingClientRect(); const scaleX = W/rect.width;
+      const mx = (ev.clientX - rect.left) * scaleX;
+      if (mx < padL || mx > W-padR) return;
+      const d = curve[nearestIndex(mx)];
+      const px = xScale(d.t), py = yScale(d.b);
+      hoverLine.setAttribute('x1',px); hoverLine.setAttribute('x2',px); hoverLine.style.opacity = 1;
+      hoverDot.setAttribute('cx',px); hoverDot.setAttribute('cy',py); hoverDot.style.opacity = 1;
+      const rectShell = shell.getBoundingClientRect(); const scaleShell = rectShell.width / W;
+      tooltip.style.left = (px*scaleShell)+'px'; tooltip.style.top = (py*scaleShell)+'px'; tooltip.style.opacity = 1;
+      tooltip.innerHTML = d.t + ' &middot; $' + fmt(d.b);
+    };
+    svg.onmouseleave = () => { hoverLine.style.opacity = 0; hoverDot.style.opacity = 0; tooltip.style.opacity = 0; };
+  }
+
+  function buildBarsIn(scope, barsKey, labelsKey, data, cls, valueFmt){
+    const barsEl = $(scope,barsKey), labelsEl = $(scope,labelsKey);
+    barsEl.innerHTML = ''; labelsEl.innerHTML = '';
+    if (!data.length) return;
+    const max = Math.max(...data.map(d=>d[1]), 1);
+    data.forEach(([label,val]) => {
+      const col = document.createElement('div'); col.className = 'bar-col';
+      const v = document.createElement('div'); v.className = 'bar-val'; v.textContent = valueFmt(val);
+      const bar = document.createElement('div'); bar.className = 'bar '+cls;
+      bar.style.height = Math.max(4, (val/max)*110) + 'px';
+      col.appendChild(v); col.appendChild(bar); barsEl.appendChild(col);
+      const lab = document.createElement('span'); lab.textContent = label; labelsEl.appendChild(lab);
+    });
+  }
+
+  function buildFloatingLedgerIn(scope, episodes){
+    const tbody = $(scope,'floatingLedgerBody');
     tbody.innerHTML = '';
     if (!episodes.length) return;
     const maxDepth = Math.max(...episodes.map(e=>e.depth));
@@ -769,7 +756,7 @@
       tr.innerHTML = `
         <td class="rank">${i+1}</td>
         <td class="num">$${fmt(e.peak)}</td>
-        <td><div class="period-cell"><span class="period-text">${periodLabel}</span><span class="duration-tag">${durLabel} to trough</span></div></td>
+        <td><div class="period-cell"><span class="period-text">${periodLabel}</span><span class="duration-tag">${durLabel}</span></div></td>
         <td class="num"><div class="depth-cell"><span class="neg">&minus;$${fmt(e.depth)}</span>
           <div class="depth-bar-track"><div class="depth-bar-fill" style="width:${(e.depth/maxDepth*100).toFixed(0)}%"></div></div></div></td>
         <td class="num neg">&minus;${e.pct.toFixed(2)}%</td>`;
@@ -777,8 +764,8 @@
     });
   }
 
-  function buildUnderwaterChart(episodes){
-    const container = document.getElementById('underwaterBars');
+  function buildUnderwaterChartIn(scope, episodes){
+    const container = $(scope,'underwaterBars');
     container.innerHTML = '';
     if (!episodes.length) return;
     const chrono = [...episodes].sort((a,b)=>a.peakTime-b.peakTime);
@@ -797,227 +784,317 @@
     container.innerHTML = html;
   }
 
-  function applyFloatingDataPrecomputed(episodes, nSamples){
+  function applyFloatingDataPrecomputedIn(scope, episodes, nSamples){
     if (episodes.length) {
       const worst = episodes[0];
-      document.getElementById('tFloatingDD').textContent = '−'+fmt(worst.depth);
-      document.getElementById('tFloatingDDSub').innerHTML =
+      $(scope,'tFloatingDD').textContent = '−'+fmt(worst.depth);
+      $(scope,'tFloatingDDSub').innerHTML =
         `<span class="flag">−${worst.pct.toFixed(2)}%</span> ${fmtDateTime(worst.peakTime)} &rarr; ${fmtDateTime(worst.troughTime)}` +
         (worst.recoverTime ? ` &middot; recovered ${fmtDateTime(worst.recoverTime)}` : ' &middot; still open at end of data');
     }
-    document.getElementById('floatingLedgerNote').innerHTML = `${episodes.length} shown &middot; from ${nSamples.toLocaleString('en-US')} equity samples`;
-    buildFloatingLedger(episodes);
-    buildUnderwaterChart(episodes);
-    document.getElementById('floatingPanel').style.display = '';
+    $(scope,'floatingLedgerNote').innerHTML = `${episodes.length} shown &middot; from ${nSamples.toLocaleString('en-US')} equity samples`;
+    buildFloatingLedgerIn(scope, episodes);
+    buildUnderwaterChartIn(scope, episodes);
+    $(scope,'floatingPanel').style.display = '';
   }
 
-  function applyFloatingData(rows){
-    applyFloatingDataPrecomputed(computeEquityEpisodes(rows), rows.length);
+  function applyFloatingDataIn(scope, rows){
+    applyFloatingDataPrecomputedIn(scope, computeEquityEpisodes(rows), rows.length);
   }
 
-  function renderResults(summary, model){
-    document.getElementById('rEaName').textContent = summary.expert;
-    document.getElementById('rSymbol').textContent = summary.symbol;
-    document.getElementById('rPeriodLine').textContent = `${model.totalDeals.toLocaleString('en-US')} deals`;
-    document.getElementById('rStartCap').textContent = '$'+fmt(model.startingBalance);
-    document.getElementById('rPeriodRange').textContent = `${shortDate(model.periodStart)} → ${shortDate(model.periodEnd)}`;
+  function renderResultsIn(scope, summary, model){
+    $(scope,'rEaName').textContent = summary.expert;
+    $(scope,'rSymbol').textContent = summary.symbol;
+    $(scope,'rPeriodLine').textContent = `${model.totalDeals.toLocaleString('en-US')} deals`;
+    $(scope,'rStartCap').textContent = '$'+fmt(model.startingBalance);
+    $(scope,'rPeriodRange').textContent = `${shortDate(model.periodStart)} → ${shortDate(model.periodEnd)}`;
 
     const pct = ((model.finalBalance - model.startingBalance) / model.startingBalance * 100);
-    const npEl = document.getElementById('tNetProfit');
+    const npEl = $(scope,'tNetProfit');
     npEl.textContent = (model.finalBalance>=model.startingBalance?'+':'') + fmt(model.finalBalance - model.startingBalance);
     npEl.className = 'value ' + (model.finalBalance>=model.startingBalance ? 'good' : 'critical');
-    document.getElementById('tNetProfitSub').textContent =
+    $(scope,'tNetProfitSub').textContent =
       `${pct>=0?'+':''}${pct.toFixed(1)}% on starting capital` + (summary.profitFactor ? ` · PF ${summary.profitFactor}` : '');
 
     const worst = model.ledger[0];
     if (worst) {
-      document.getElementById('tRealizedDD').textContent = '−'+fmt(worst.depth);
-      document.getElementById('tRealizedDDSub').textContent =
+      $(scope,'tRealizedDD').textContent = '−'+fmt(worst.depth);
+      $(scope,'tRealizedDDSub').textContent =
         `−${worst.pct.toFixed(2)}% · ${shortDate(worst.peakDate)}${worst.troughDate!==worst.peakDate?' → '+shortDate(worst.troughDate):''}`;
     } else {
-      document.getElementById('tRealizedDD').textContent = '—';
-      document.getElementById('tRealizedDDSub').textContent = 'no drawdown detected';
+      $(scope,'tRealizedDD').textContent = '—';
+      $(scope,'tRealizedDDSub').textContent = 'no drawdown detected';
     }
 
-    document.getElementById('tLots').textContent = model.totalLots.toLocaleString('en-US',{minimumFractionDigits:2});
-    document.getElementById('tLotsSub').textContent = `across ${summary.totalTrades || model.totalDeals} round-trip trades`;
+    $(scope,'tLots').textContent = model.totalLots.toLocaleString('en-US',{minimumFractionDigits:2});
+    $(scope,'tLotsSub').textContent = `across ${summary.totalTrades || model.totalDeals} round-trip trades`;
 
-    document.getElementById('chartTitle').textContent =
+    $(scope,'chartTitle').textContent =
       model.ledger[0] && model.finalBalance < model.ledger[0].peak
-        ? 'Balance curve — the peak that was never reclaimed'
+        ? 'Balance curve — peak not reclaimed'
         : 'Balance curve';
-    document.getElementById('chartNote').textContent = `${model.totalDeals.toLocaleString('en-US')} deals · hover to inspect`;
+    $(scope,'chartNote').textContent = `${model.totalDeals.toLocaleString('en-US')} deals`;
 
-    renderChart(model.curve);
-    buildBars('lotsBars','lotsLabels', model.monthlyLots, 'neon', v=>v.toFixed(2));
-    buildBars('plBars','plLabels', model.monthlyPL, 'good', v=>(v>=0?'+':'')+Math.round(v).toLocaleString('en-US'));
-
-    document.getElementById('uploadStage').classList.add('hide');
-    document.getElementById('results').classList.add('show');
+    renderChartIn(scope, model.curve);
+    buildBarsIn(scope, 'lotsBars','lotsLabels', model.monthlyLots, 'neon', v=>v.toFixed(2));
+    buildBarsIn(scope, 'plBars','plLabels', model.monthlyPL, 'good', v=>(v>=0?'+':'')+Math.round(v).toLocaleString('en-US'));
   }
 
-  // ---------------- File handling (both files required before generating anything) ----------------
-  const dropzone = document.getElementById('dropzone');
-  const fileInput = document.getElementById('fileInput');
+  // ================= Multi-slot upload & comparison orchestration =================
+  const MAX_SLOTS = 3;
+  let compareCount = 1;
+  const slots = []; // { pendingReport, pendingCsvRows, isSample, els }
+  for (let i=0;i<MAX_SLOTS;i++) slots.push({ pendingReport:null, pendingCsvRows:null, isSample:false, els:null });
+
+  const slotsContainer = document.getElementById('slotsContainer');
+  const waitStatus = document.getElementById('waitStatus');
   const errorBanner = document.getElementById('errorBanner');
   const errorMsg = document.getElementById('errorMsg');
-  const dzTitle = document.getElementById('dzTitle');
-  const csvDropzone = document.getElementById('csvDropzone');
-  const csvInputStage = document.getElementById('csvInputStage');
-  const csvStageStatus = document.getElementById('csvStageStatus');
-  const csvDzTitle = document.getElementById('csvDzTitle');
-  const waitStatus = document.getElementById('waitStatus');
-  const CSV_STAGE_LABEL = 'Drop the equity CSV here';
+  const resultsGrid = document.getElementById('resultsGrid');
+  const topActions = document.getElementById('topActions');
+  const pageWrap = document.getElementById('pageWrap');
+  const resultColumnTemplate = document.getElementById('resultColumnTemplate');
 
-  let pendingReport = null;   // { summary, model }
-  let pendingCsvRows = null;  // parsed equity rows
-
-  function showError(msg){
-    errorMsg.textContent = msg;
-    errorBanner.classList.add('show');
-  }
+  function showError(msg){ errorMsg.textContent = msg; errorBanner.classList.add('show'); }
   function clearError(){ errorBanner.classList.remove('show'); }
 
+  function slotLabel(i, n){ return n <= 1 ? 'Backtest' : `Backtest ${i+1}`; }
+
+  function buildSlotDOM(i){
+    const wrap = document.createElement('div');
+    wrap.className = 'slot-block';
+    wrap.innerHTML = `
+      <div class="slot-label"><span>${slotLabel(i, compareCount)}</span><span class="slot-status" data-role="status"></span></div>
+      <div class="upload-slots">
+        <div class="dropzone" data-role="reportDz">
+          <div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></div>
+          <div class="dz-title" data-role="reportTitle">Drop your report.html here</div>
+          <div class="dz-sub">Strategy Tester &rarr; right-click &rarr; <code>Save as Report</code> &middot; required</div>
+          <button class="dz-btn" type="button" data-role="reportBtn">Choose file</button>
+          <input type="file" accept=".htm,.html,text/html" hidden data-role="reportInput" />
+        </div>
+        <div class="dropzone dropzone-secondary" data-role="csvDz">
+          <div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></div>
+          <div class="dz-title" data-role="csvTitle">Drop the equity CSV here</div>
+          <div class="dz-sub">Strategy Tester &rarr; Graph tab &rarr; export report data &middot; required</div>
+          <button class="dz-btn dz-btn-ghost" type="button" data-role="csvBtn">Choose CSV</button>
+          <input type="file" accept=".csv" hidden data-role="csvInput" />
+          <div class="csv-stage-status" data-role="csvStatus"></div>
+        </div>
+      </div>`;
+    slotsContainer.appendChild(wrap);
+
+    const els = {
+      wrap,
+      status: wrap.querySelector('[data-role="status"]'),
+      reportDz: wrap.querySelector('[data-role="reportDz"]'),
+      reportTitle: wrap.querySelector('[data-role="reportTitle"]'),
+      reportBtn: wrap.querySelector('[data-role="reportBtn"]'),
+      reportInput: wrap.querySelector('[data-role="reportInput"]'),
+      csvDz: wrap.querySelector('[data-role="csvDz"]'),
+      csvTitle: wrap.querySelector('[data-role="csvTitle"]'),
+      csvBtn: wrap.querySelector('[data-role="csvBtn"]'),
+      csvInput: wrap.querySelector('[data-role="csvInput"]'),
+      csvStatus: wrap.querySelector('[data-role="csvStatus"]'),
+    };
+    slots[i].els = els;
+
+    const reportDefaultTitle = 'Drop your report.html here';
+    const csvDefaultTitle = 'Drop the equity CSV here';
+
+    function handleReportFile(file){
+      if (!file) return;
+      clearError();
+      if (file.size > MAX_FILE_BYTES) {
+        showError(`This file is ${(file.size/1024/1024).toFixed(0)}MB — larger than the ${MAX_FILE_BYTES/1024/1024}MB limit.`);
+        return;
+      }
+      els.reportDz.classList.add('busy');
+      els.reportTitle.textContent = 'Reading report…';
+      const reader = new FileReader();
+      reader.onload = () => {
+        setTimeout(() => {
+          try {
+            const html = decodeReport(reader.result);
+            const { deals, summary } = parseReport(html);
+            const model = computeModel(deals);
+            slots[i].pendingReport = { summary, model };
+            els.reportDz.classList.add('dz-done');
+            els.reportTitle.textContent = summary.expert;
+            updateSlotStatus(i);
+            tryRenderAll();
+          } catch (err) {
+            showError(err.message || 'Unrecognized file format.');
+            els.reportTitle.textContent = reportDefaultTitle;
+          } finally {
+            els.reportDz.classList.remove('busy');
+          }
+        }, 0);
+      };
+      reader.onerror = () => {
+        showError('Could not read the file from disk.');
+        els.reportDz.classList.remove('busy');
+        els.reportTitle.textContent = reportDefaultTitle;
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function handleCsvFile(file){
+      if (!file) return;
+      clearError();
+      els.csvDz.classList.add('busy');
+      els.csvTitle.textContent = 'Reading equity CSV…';
+      els.csvStatus.textContent = '';
+      els.csvStatus.classList.remove('is-error');
+      const reader = new FileReader();
+      reader.onload = () => {
+        setTimeout(() => {
+          try {
+            const text = decodeReport(reader.result);
+            const rows = parseEquityCsv(text);
+            slots[i].pendingCsvRows = rows;
+            slots[i].isSample = false;
+            els.csvDz.classList.add('dz-done');
+            els.csvTitle.textContent = 'Equity CSV ready';
+            els.csvStatus.textContent = `✓ ${rows.length.toLocaleString('en-US')} samples`;
+            els.csvStatus.classList.remove('is-error');
+            updateSlotStatus(i);
+            tryRenderAll();
+          } catch (err) {
+            els.csvTitle.textContent = csvDefaultTitle;
+            els.csvStatus.textContent = err.message || 'Could not read this CSV.';
+            els.csvStatus.classList.add('is-error');
+          } finally {
+            els.csvDz.classList.remove('busy');
+          }
+        }, 0);
+      };
+      reader.onerror = () => {
+        els.csvDz.classList.remove('busy');
+        els.csvTitle.textContent = csvDefaultTitle;
+        els.csvStatus.textContent = 'Could not read the file from disk.';
+        els.csvStatus.classList.add('is-error');
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    els.reportDz.addEventListener('click', () => els.reportInput.click());
+    els.reportBtn.addEventListener('click', (e) => { e.stopPropagation(); els.reportInput.click(); });
+    els.reportInput.addEventListener('change', (e) => handleReportFile(e.target.files[0]));
+    ['dragenter','dragover'].forEach(evt => els.reportDz.addEventListener(evt, (e) => { e.preventDefault(); els.reportDz.classList.add('drag'); }));
+    ['dragleave','drop'].forEach(evt => els.reportDz.addEventListener(evt, (e) => { e.preventDefault(); els.reportDz.classList.remove('drag'); }));
+    els.reportDz.addEventListener('drop', (e) => handleReportFile(e.dataTransfer.files[0]));
+
+    els.csvDz.addEventListener('click', () => els.csvInput.click());
+    els.csvBtn.addEventListener('click', (e) => { e.stopPropagation(); els.csvInput.click(); });
+    els.csvInput.addEventListener('change', (e) => handleCsvFile(e.target.files[0]));
+    ['dragenter','dragover'].forEach(evt => els.csvDz.addEventListener(evt, (e) => { e.preventDefault(); els.csvDz.classList.add('drag'); }));
+    ['dragleave','drop'].forEach(evt => els.csvDz.addEventListener(evt, (e) => { e.preventDefault(); els.csvDz.classList.remove('drag'); }));
+    els.csvDz.addEventListener('drop', (e) => handleCsvFile(e.dataTransfer.files[0]));
+  }
+
+  function updateSlotStatus(i){
+    const s = slots[i];
+    if (!s.els) return;
+    if (s.pendingReport && s.pendingCsvRows) s.els.status.textContent = '✓ ready';
+    else if (s.pendingReport) s.els.status.textContent = 'report ready';
+    else if (s.pendingCsvRows) s.els.status.textContent = 'CSV ready';
+    else s.els.status.textContent = '';
+  }
+
+  function rebuildSlotsUI(){
+    slotsContainer.innerHTML = '';
+    for (let i=0;i<compareCount;i++){
+      slots[i].pendingReport = null;
+      slots[i].pendingCsvRows = null;
+      slots[i].isSample = false;
+      slots[i].els = null;
+      buildSlotDOM(i);
+    }
+    for (let i=compareCount;i<MAX_SLOTS;i++){
+      slots[i].pendingReport = null;
+      slots[i].pendingCsvRows = null;
+      slots[i].isSample = false;
+      slots[i].els = null;
+    }
+    updateWaitStatus();
+  }
+
   function updateWaitStatus(){
-    if (pendingReport && pendingCsvRows) {
-      waitStatus.classList.remove('show');
-      return;
-    }
-    if (!pendingReport && !pendingCsvRows) {
-      waitStatus.classList.remove('show');
-      return;
-    }
-    waitStatus.innerHTML = `<span class="spin"></span> ${pendingReport ? 'Report ready — waiting for the equity CSV' : 'Equity CSV ready — waiting for the report'}`;
+    const active = slots.slice(0, compareCount);
+    const readyCount = active.filter(s => s.pendingReport && s.pendingCsvRows).length;
+    if (readyCount === compareCount) { waitStatus.classList.remove('show'); return; }
+    waitStatus.innerHTML = `<span class="spin"></span> ${readyCount} of ${compareCount} backtest${compareCount>1?'s':''} ready`;
     waitStatus.classList.add('show');
   }
 
-  function tryRenderCombined(){
+  function tryRenderAll(){
     updateWaitStatus();
-    if (!(pendingReport && pendingCsvRows)) return;
-    renderResults(pendingReport.summary, pendingReport.model);
-    applyFloatingData(pendingCsvRows);
+    const active = slots.slice(0, compareCount);
+    if (!active.every(s => s.pendingReport && s.pendingCsvRows)) return;
+
+    resultsGrid.innerHTML = '';
+    resultsGrid.style.setProperty('--cols', String(compareCount));
+    active.forEach(s => {
+      const frag = resultColumnTemplate.content.cloneNode(true);
+      const col = frag.querySelector('.result-col');
+      resultsGrid.appendChild(col);
+      renderResultsIn(col, s.pendingReport.summary, s.pendingReport.model);
+      if (s.isSample) applyFloatingDataPrecomputedIn(col, s.pendingCsvRows.rows, s.pendingCsvRows.nSamples);
+      else applyFloatingDataIn(col, s.pendingCsvRows);
+    });
+
+    document.getElementById('uploadStage').classList.add('hide');
+    resultsGrid.classList.add('show');
+    topActions.style.display = '';
+    pageWrap.classList.toggle('is-comparing', compareCount > 1);
   }
 
-  function handleFile(file){
-    clearError();
-    if (!file) return;
-    if (file.size > MAX_FILE_BYTES) {
-      showError(`This file is ${(file.size/1024/1024).toFixed(0)}MB — larger than the ${MAX_FILE_BYTES/1024/1024}MB limit for a single backtest report.`);
-      return;
-    }
-    dropzone.classList.add('busy');
-    dzTitle.textContent = 'Reading report…';
-    const reader = new FileReader();
-    reader.onload = () => {
-      setTimeout(() => {
-        try {
-          const html = decodeReport(reader.result);
-          const { deals, summary } = parseReport(html);
-          const model = computeModel(deals);
-          pendingReport = { summary, model };
-          dropzone.classList.add('dz-done');
-          dzTitle.textContent = 'Report ready';
-          tryRenderCombined();
-        } catch (err) {
-          showError(err.message || 'Unrecognized file format.');
-          dzTitle.textContent = 'Drop your report.html here';
-        } finally {
-          dropzone.classList.remove('busy');
-        }
-      }, 0);
-    };
-    reader.onerror = () => {
-      showError('Could not read the file from disk.');
-      dropzone.classList.remove('busy');
-      dzTitle.textContent = 'Drop your report.html here';
-    };
-    reader.readAsArrayBuffer(file);
-  }
-
-  dropzone.addEventListener('click', () => fileInput.click());
-  document.getElementById('browseBtn').addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
-  fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
-  ['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add('drag'); }));
-  ['dragleave','drop'].forEach(evt => dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.remove('drag'); }));
-  dropzone.addEventListener('drop', (e) => { handleFile(e.dataTransfer.files[0]); });
-
-  function handleCsvStageFile(file){
-    if (!file) return;
-    clearError();
-    csvDropzone.classList.add('busy');
-    csvDzTitle.textContent = 'Reading equity CSV…';
-    csvStageStatus.textContent = '';
-    csvStageStatus.classList.remove('is-error');
-    const reader = new FileReader();
-    reader.onload = () => {
-      setTimeout(() => {
-        try {
-          const text = decodeReport(reader.result);
-          const rows = parseEquityCsv(text);
-          pendingCsvRows = rows;
-          csvDropzone.classList.add('dz-done');
-          csvDzTitle.textContent = 'Equity CSV ready';
-          csvStageStatus.textContent = `✓ ${rows.length.toLocaleString('en-US')} samples loaded`;
-          tryRenderCombined();
-        } catch (err) {
-          csvDzTitle.textContent = CSV_STAGE_LABEL;
-          csvStageStatus.textContent = err.message || 'Could not read this CSV.';
-          csvStageStatus.classList.add('is-error');
-        } finally {
-          csvDropzone.classList.remove('busy');
-        }
-      }, 0);
-    };
-    reader.onerror = () => {
-      csvDropzone.classList.remove('busy');
-      csvDzTitle.textContent = CSV_STAGE_LABEL;
-      csvStageStatus.textContent = 'Could not read the file from disk.';
-      csvStageStatus.classList.add('is-error');
-    };
-    reader.readAsArrayBuffer(file);
-  }
-  csvDropzone.addEventListener('click', () => csvInputStage.click());
-  document.getElementById('browseCsvStageBtn').addEventListener('click', (e) => { e.stopPropagation(); csvInputStage.click(); });
-  csvInputStage.addEventListener('change', (e) => handleCsvStageFile(e.target.files[0]));
-  ['dragenter','dragover'].forEach(evt => csvDropzone.addEventListener(evt, (e) => { e.preventDefault(); csvDropzone.classList.add('drag'); }));
-  ['dragleave','drop'].forEach(evt => csvDropzone.addEventListener(evt, (e) => { e.preventDefault(); csvDropzone.classList.remove('drag'); }));
-  csvDropzone.addEventListener('drop', (e) => { handleCsvStageFile(e.dataTransfer.files[0]); });
-
-  document.getElementById('resetBtn').addEventListener('click', () => {
-    document.getElementById('results').classList.remove('show');
-    document.getElementById('uploadStage').classList.remove('hide');
-    clearError();
-    pendingReport = null;
-    pendingCsvRows = null;
-    fileInput.value = '';
-    dropzone.classList.remove('dz-done', 'busy');
-    dzTitle.textContent = 'Drop your report.html here';
-    csvInputStage.value = '';
-    csvDropzone.classList.remove('dz-done', 'busy');
-    csvDzTitle.textContent = CSV_STAGE_LABEL;
-    csvStageStatus.textContent = '';
-    csvStageStatus.classList.remove('is-error');
-    waitStatus.classList.remove('show');
-    document.getElementById('floatingPanel').style.display = 'none';
+  document.getElementById('compareOpts').addEventListener('click', (e) => {
+    const btn = e.target.closest('.compare-opt');
+    if (!btn) return;
+    compareCount = Number(btn.dataset.count);
+    document.querySelectorAll('.compare-opt').forEach(b => b.classList.toggle('active', b === btn));
+    rebuildSlotsUI();
   });
 
-  // ---------------- Sample report (embedded, real numbers from a real backtest + a real equity CSV) ----------------
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    resultsGrid.classList.remove('show');
+    resultsGrid.innerHTML = '';
+    topActions.style.display = 'none';
+    pageWrap.classList.remove('is-comparing');
+    document.getElementById('uploadStage').classList.remove('hide');
+    clearError();
+    rebuildSlotsUI();
+  });
+
   document.getElementById('sampleBtn').addEventListener('click', () => {
     clearError();
+    const targetIdx = slots.slice(0, compareCount).findIndex(s => !(s.pendingReport && s.pendingCsvRows));
+    if (targetIdx === -1) return;
     const S = window.__SAMPLE_DATA__;
-    pendingReport = { summary: S.summary, model: S.model };
-    pendingCsvRows = null; // sample uses precomputed floating data directly, see below
-    renderResults(S.summary, S.model);
-    applyFloatingDataPrecomputed(
-      S.floating.floatingLedger.map(e => ({
+    slots[targetIdx].pendingReport = { summary: S.summary, model: S.model };
+    slots[targetIdx].pendingCsvRows = {
+      rows: S.floating.floatingLedger.map(e => ({
         ...e,
         peakTime: new Date(e.peakTime).getTime(),
         troughTime: new Date(e.troughTime).getTime(),
         recoverTime: e.recoverTime ? new Date(e.recoverTime).getTime() : null,
       })),
-      S.floating.nSamples
-    );
+      nSamples: S.floating.nSamples,
+    };
+    slots[targetIdx].isSample = true;
+    const els = slots[targetIdx].els;
+    if (els) {
+      els.reportDz.classList.add('dz-done'); els.reportTitle.textContent = S.summary.expert;
+      els.csvDz.classList.add('dz-done'); els.csvTitle.textContent = 'Equity CSV ready';
+      els.csvStatus.textContent = `✓ ${S.floating.nSamples.toLocaleString('en-US')} samples`;
+    }
+    updateSlotStatus(targetIdx);
+    tryRenderAll();
   });
+
+  rebuildSlotsUI();
 
   window.__SAMPLE_DATA__ = /*__SAMPLE_DATA__*/{"summary":{"expert":"TrendGridBasketHedgeEA_V2","symbol":"XAUUSD.v","profitFactor":"1.73","totalTrades":"12,899"},"model":{"monthlyLots":[["Feb",61.15],["Mar",79.93],["Apr",48.76],["May",36.58],["Jun",43.54],["Jul",24.22]],"monthlyPL":[["Feb",19972.8],["Mar",19467.29],["Apr",10770.59],["May",10465.49],["Jun",11218.75],["Jul",8323.38]],"curve":[{"t":"2026-02-01","b":3000.0},{"t":"2026-02-02","b":3102.64},{"t":"2026-02-02","b":3447.58},{"t":"2026-02-02","b":3662.18},{"t":"2026-02-02","b":3609.4},{"t":"2026-02-02","b":3671.88},{"t":"2026-02-02","b":3854.46},{"t":"2026-02-02","b":3872.62},{"t":"2026-02-02","b":4012.52},{"t":"2026-02-02","b":4237.88},{"t":"2026-02-02","b":4383.44},{"t":"2026-02-02","b":4655.43},{"t":"2026-02-02","b":4428.11},{"t":"2026-02-02","b":4629.45},{"t":"2026-02-02","b":4727.56},{"t":"2026-02-02","b":4721.4},{"t":"2026-02-02","b":4851.56},{"t":"2026-02-02","b":4986.98},{"t":"2026-02-02","b":5216.16},{"t":"2026-02-02","b":5316.82},{"t":"2026-02-02","b":5414.08},{"t":"2026-02-02","b":5603.6},{"t":"2026-02-02","b":5712.98},{"t":"2026-02-02","b":5805.24},{"t":"2026-02-02","b":5810.7},{"t":"2026-02-02","b":5948.4},{"t":"2026-02-02","b":6163.72},{"t":"2026-02-02","b":5999.8},{"t":"2026-02-02","b":6207.62},{"t":"2026-02-02","b":6353.12},{"t":"2026-02-02","b":6483.72},{"t":"2026-02-02","b":6575.32},{"t":"2026-02-02","b":6715.52},{"t":"2026-02-02","b":6803.92},{"t":"2026-02-02","b":7075.08},{"t":"2026-02-02","b":7290.08},{"t":"2026-02-03","b":7410.16},{"t":"2026-02-03","b":7567.78},{"t":"2026-02-03","b":7632.22},{"t":"2026-02-03","b":7909.75},{"t":"2026-02-03","b":7828.21},{"t":"2026-02-03","b":7906.53},{"t":"2026-02-03","b":8018.37},{"t":"2026-02-03","b":8145.47},{"t":"2026-02-03","b":8207.61},{"t":"2026-02-03","b":8305.77},{"t":"2026-02-03","b":8516.01},{"t":"2026-02-03","b":8585.27},{"t":"2026-02-03","b":8711.69},{"t":"2026-02-03","b":8803.59},{"t":"2026-02-03","b":8932.83},{"t":"2026-02-03","b":9018.09},{"t":"2026-02-03","b":9120.33},{"t":"2026-02-03","b":9358.91},{"t":"2026-02-04","b":9179.93},{"t":"2026-02-04","b":9339.52},{"t":"2026-02-04","b":9440.38},{"t":"2026-02-04","b":9784.56},{"t":"2026-02-04","b":9546.56},{"t":"2026-02-04","b":9567.26},{"t":"2026-02-04","b":9677.5},{"t":"2026-02-04","b":9752.74},{"t":"2026-02-04","b":9772.48},{"t":"2026-02-04","b":9801.77},{"t":"2026-02-04","b":9902.15},{"t":"2026-02-04","b":9966.44},{"t":"2026-02-04","b":10075.54},{"t":"2026-02-04","b":10152.76},{"t":"2026-02-04","b":10313.08},{"t":"2026-02-05","b":10412.74},{"t":"2026-02-05","b":10631.86},{"t":"2026-02-05","b":10663.72},{"t":"2026-02-05","b":10838.38},{"t":"2026-02-05","b":11037.8},{"t":"2026-02-05","b":11160.16},{"t":"2026-02-05","b":11223.62},{"t":"2026-02-05","b":11272.04},{"t":"2026-02-05","b":11381.86},{"t":"2026-02-05","b":11404.24},{"t":"2026-02-05","b":11471.28},{"t":"2026-02-05","b":11640.42},{"t":"2026-02-05","b":11678.94},{"t":"2026-02-05","b":11678.94},{"t":"2026-02-05","b":12248.92},{"t":"2026-02-05","b":12087.88},{"t":"2026-02-05","b":12238.7},{"t":"2026-02-05","b":12365.36},{"t":"2026-02-06","b":12444.1},{"t":"2026-02-06","b":12517.98},{"t":"2026-02-06","b":12675.82},{"t":"2026-02-06","b":12735.42},{"t":"2026-02-06","b":12843.67},{"t":"2026-02-06","b":13042.25},{"t":"2026-02-06","b":13213.77},{"t":"2026-02-06","b":13334.55},{"t":"2026-02-06","b":13480.81},{"t":"2026-02-06","b":13542.47},{"t":"2026-02-06","b":13587.07},{"t":"2026-02-06","b":13703.77},{"t":"2026-02-06","b":13863.75},{"t":"2026-02-06","b":14175.95},{"t":"2026-02-06","b":14559.9},{"t":"2026-02-06","b":14071.42},{"t":"2026-02-06","b":14216.9},{"t":"2026-02-06","b":14175.08},{"t":"2026-02-06","b":14224.09},{"t":"2026-02-06","b":14149.95},{"t":"2026-02-09","b":14241.03},{"t":"2026-02-09","b":14279.73},{"t":"2026-02-09","b":14327.4},{"t":"2026-02-09","b":14633.37},{"t":"2026-02-09","b":14590.49},{"t":"2026-02-09","b":14716.47},{"t":"2026-02-09","b":14858.45},{"t":"2026-02-09","b":14925.27},{"t":"2026-02-09","b":15000.39},{"t":"2026-02-09","b":15022.25},{"t":"2026-02-09","b":15237.27},{"t":"2026-02-09","b":15148.84},{"t":"2026-02-10","b":15250.1},{"t":"2026-02-10","b":15322.06},{"t":"2026-02-10","b":15422.82},{"t":"2026-02-10","b":15524.74},{"t":"2026-02-10","b":15628.54},{"t":"2026-02-10","b":15693.14},{"t":"2026-02-10","b":15770.02},{"t":"2026-02-10","b":15869.26},{"t":"2026-02-10","b":15953.06},{"t":"2026-02-10","b":16027.56},{"t":"2026-02-11","b":16147.12},{"t":"2026-02-11","b":16230.72},{"t":"2026-02-11","b":16325.74},{"t":"2026-02-11","b":16408.12},{"t":"2026-02-12","b":16523.64},{"t":"2026-02-12","b":16619.3},{"t":"2026-02-12","b":16723.94},{"t":"2026-02-12","b":16678.52},{"t":"2026-02-12","b":16725.98},{"t":"2026-02-12","b":16834.16},{"t":"2026-02-12","b":16954.62},{"t":"2026-02-13","b":17035.14},{"t":"2026-02-13","b":17111.46},{"t":"2026-02-13","b":17314.46},{"t":"2026-02-13","b":17387.96},{"t":"2026-02-13","b":17461.52},{"t":"2026-02-13","b":17628.8},{"t":"2026-02-13","b":17717.24},{"t":"2026-02-16","b":17753.54},{"t":"2026-02-16","b":17781.28},{"t":"2026-02-16","b":18582.5},{"t":"2026-02-16","b":17998.78},{"t":"2026-02-16","b":18045.11},{"t":"2026-02-16","b":18194.11},{"t":"2026-02-17","b":18233.13},{"t":"2026-02-17","b":18402.52},{"t":"2026-02-17","b":18408.44},{"t":"2026-02-17","b":18697.66},{"t":"2026-02-17","b":18752.16},{"t":"2026-02-17","b":18914.02},{"t":"2026-02-18","b":19072.6},{"t":"2026-02-18","b":19343.24},{"t":"2026-02-18","b":19392.18},{"t":"2026-02-18","b":19524.58},{"t":"2026-02-19","b":19593.5},{"t":"2026-02-19","b":19628.78},{"t":"2026-02-19","b":19729.12},{"t":"2026-02-19","b":20169.48},{"t":"2026-02-19","b":20100.38},{"t":"2026-02-19","b":20230.04},{"t":"2026-02-20","b":20100.48},{"t":"2026-02-20","b":20176.16},{"t":"2026-02-20","b":20215.56},{"t":"2026-02-20","b":20682.74},{"t":"2026-02-20","b":20448.06},{"t":"2026-02-20","b":20502.94},{"t":"2026-02-20","b":20602.08},{"t":"2026-02-23","b":20789.3},{"t":"2026-02-23","b":20980.58},{"t":"2026-02-23","b":20881.84},{"t":"2026-02-24","b":21118.2},{"t":"2026-02-24","b":21169.34},{"t":"2026-02-24","b":21245.89},{"t":"2026-02-24","b":21328.97},{"t":"2026-02-24","b":21327.83},{"t":"2026-02-24","b":21435.61},{"t":"2026-02-24","b":21445.31},{"t":"2026-02-24","b":21522.33},{"t":"2026-02-24","b":21647.35},{"t":"2026-02-25","b":21831.11},{"t":"2026-02-25","b":21870.81},{"t":"2026-02-25","b":21947.97},{"t":"2026-02-25","b":21972.17},{"t":"2026-02-25","b":22082.31},{"t":"2026-02-25","b":22098.73},{"t":"2026-02-25","b":22198.25},{"t":"2026-02-26","b":22222.39},{"t":"2026-02-26","b":22247.31},{"t":"2026-02-26","b":22304.86},{"t":"2026-02-26","b":22493.08},{"t":"2026-02-27","b":22488.68},{"t":"2026-02-27","b":22541.14},{"t":"2026-02-27","b":22580.1},{"t":"2026-02-27","b":22730.68},{"t":"2026-02-27","b":22821.34},{"t":"2026-02-27","b":22835.84},{"t":"2026-02-27","b":23677.69},{"t":"2026-03-02","b":23023.92},{"t":"2026-03-02","b":23211.73},{"t":"2026-03-02","b":23100.65},{"t":"2026-03-02","b":23180.63},{"t":"2026-03-02","b":23207.79},{"t":"2026-03-02","b":23308.09},{"t":"2026-03-02","b":23384.75},{"t":"2026-03-02","b":23558.83},{"t":"2026-03-02","b":24671.92},{"t":"2026-03-02","b":23673.64},{"t":"2026-03-03","b":23843.46},{"t":"2026-03-03","b":23848.78},{"t":"2026-03-03","b":23926.12},{"t":"2026-03-03","b":24216.8},{"t":"2026-03-03","b":24428.07},{"t":"2026-03-03","b":24362.41},{"t":"2026-03-03","b":24546.48},{"t":"2026-03-03","b":24468.1},{"t":"2026-03-03","b":24601.54},{"t":"2026-03-03","b":24902.74},{"t":"2026-03-04","b":24615.95},{"t":"2026-03-04","b":24812.99},{"t":"2026-03-04","b":25002.37},{"t":"2026-03-04","b":24929.39},{"t":"2026-03-04","b":24984.23},{"t":"2026-03-04","b":25053.35},{"t":"2026-03-04","b":25140.63},{"t":"2026-03-04","b":25316.89},{"t":"2026-03-04","b":25316.89},{"t":"2026-03-04","b":25392.37},{"t":"2026-03-04","b":25532.08},{"t":"2026-03-04","b":25555.36},{"t":"2026-03-04","b":25652.92},{"t":"2026-03-05","b":25743.36},{"t":"2026-03-05","b":25819.06},{"t":"2026-03-05","b":25964.78},{"t":"2026-03-05","b":25964.78},{"t":"2026-03-05","b":26123.53},{"t":"2026-03-05","b":26153.3},{"t":"2026-03-05","b":26103.32},{"t":"2026-03-05","b":26390.29},{"t":"2026-03-06","b":26154.41},{"t":"2026-03-06","b":26204.85},{"t":"2026-03-06","b":26204.85},{"t":"2026-03-06","b":26241.53},{"t":"2026-03-06","b":26948.16},{"t":"2026-03-06","b":26273.35},{"t":"2026-03-06","b":26405.91},{"t":"2026-03-09","b":26663.39},{"t":"2026-03-09","b":26720.29},{"t":"2026-03-09","b":26812.43},{"t":"2026-03-09","b":26812.43},{"t":"2026-03-09","b":27309.51},{"t":"2026-03-09","b":26963.31},{"t":"2026-03-09","b":27061.54},{"t":"2026-03-09","b":27174.62},{"t":"2026-03-09","b":27140.0},{"t":"2026-03-09","b":27240.82},{"t":"2026-03-09","b":27342.05},{"t":"2026-03-10","b":27425.95},{"t":"2026-03-10","b":27704.37},{"t":"2026-03-10","b":27774.71},{"t":"2026-03-10","b":27932.15},{"t":"2026-03-10","b":27932.57},{"t":"2026-03-10","b":28045.51},{"t":"2026-03-11","b":28090.02},{"t":"2026-03-11","b":28133.54},{"t":"2026-03-11","b":28171.74},{"t":"2026-03-11","b":28268.94},{"t":"2026-03-11","b":28527.32},{"t":"2026-03-11","b":28507.38},{"t":"2026-03-11","b":28604.48},{"t":"2026-03-12","b":28636.8},{"t":"2026-03-12","b":28688.66},{"t":"2026-03-12","b":28982.9},{"t":"2026-03-12","b":29033.19},{"t":"2026-03-12","b":28973.33},{"t":"2026-03-13","b":29147.03},{"t":"2026-03-13","b":29303.17},{"t":"2026-03-13","b":29502.88},{"t":"2026-03-13","b":29509.56},{"t":"2026-03-13","b":29696.0},{"t":"2026-03-16","b":29636.88},{"t":"2026-03-16","b":29866.34},{"t":"2026-03-16","b":29777.3},{"t":"2026-03-16","b":29779.6},{"t":"2026-03-16","b":29872.9},{"t":"2026-03-16","b":29921.5},{"t":"2026-03-16","b":30101.68},{"t":"2026-03-16","b":30229.77},{"t":"2026-03-16","b":30212.23},{"t":"2026-03-16","b":30275.21},{"t":"2026-03-16","b":31248.47},{"t":"2026-03-17","b":30363.72},{"t":"2026-03-17","b":30415.78},{"t":"2026-03-17","b":30443.76},{"t":"2026-03-17","b":30849.5},{"t":"2026-03-17","b":30702.22},{"t":"2026-03-17","b":30693.04},{"t":"2026-03-17","b":30840.47},{"t":"2026-03-18","b":30808.51},{"t":"2026-03-18","b":30923.53},{"t":"2026-03-18","b":31024.41},{"t":"2026-03-18","b":31314.21},{"t":"2026-03-18","b":31257.05},{"t":"2026-03-18","b":31310.41},{"t":"2026-03-19","b":31397.57},{"t":"2026-03-19","b":31504.57},{"t":"2026-03-19","b":31743.62},{"t":"2026-03-19","b":31801.36},{"t":"2026-03-19","b":31934.18},{"t":"2026-03-19","b":32079.4},{"t":"2026-03-19","b":32174.52},{"t":"2026-03-19","b":32282.96},{"t":"2026-03-19","b":32399.04},{"t":"2026-03-20","b":32437.28},{"t":"2026-03-20","b":32577.0},{"t":"2026-03-20","b":32690.3},{"t":"2026-03-20","b":32756.7},{"t":"2026-03-20","b":32959.0},{"t":"2026-03-20","b":32982.0},{"t":"2026-03-20","b":33038.2},{"t":"2026-03-20","b":33192.2},{"t":"2026-03-20","b":33192.2},{"t":"2026-03-20","b":33292.34},{"t":"2026-03-20","b":34087.14},{"t":"2026-03-20","b":33791.92},{"t":"2026-03-20","b":33405.98},{"t":"2026-03-20","b":35642.38},{"t":"2026-03-20","b":34585.47},{"t":"2026-03-23","b":33625.07},{"t":"2026-03-23","b":33751.61},{"t":"2026-03-23","b":33934.27},{"t":"2026-03-23","b":34060.07},{"t":"2026-03-23","b":34060.71},{"t":"2026-03-23","b":34108.81},{"t":"2026-03-23","b":34163.91},{"t":"2026-03-23","b":34264.74},{"t":"2026-03-23","b":34346.12},{"t":"2026-03-23","b":34525.44},{"t":"2026-03-23","b":34570.52},{"t":"2026-03-23","b":34767.7},{"t":"2026-03-23","b":34938.76},{"t":"2026-03-23","b":35018.58},{"t":"2026-03-23","b":35046.04},{"t":"2026-03-23","b":35126.61},{"t":"2026-03-23","b":35235.91},{"t":"2026-03-23","b":35394.21},{"t":"2026-03-23","b":35553.73},{"t":"2026-03-23","b":35764.81},{"t":"2026-03-23","b":35826.45},{"t":"2026-03-23","b":35972.27},{"t":"2026-03-23","b":36091.35},{"t":"2026-03-23","b":36270.87},{"t":"2026-03-23","b":36211.35},{"t":"2026-03-23","b":36179.67},{"t":"2026-03-23","b":36368.34},{"t":"2026-03-23","b":36497.34},{"t":"2026-03-23","b":36424.38},{"t":"2026-03-23","b":36542.36},{"t":"2026-03-24","b":36472.42},{"t":"2026-03-24","b":36472.42},{"t":"2026-03-24","b":36662.56},{"t":"2026-03-24","b":36662.56},{"t":"2026-03-24","b":39949.46},{"t":"2026-03-24","b":38153.14},{"t":"2026-03-24","b":37174.55},{"t":"2026-03-24","b":36934.83},{"t":"2026-03-24","b":36966.45},{"t":"2026-03-24","b":37061.83},{"t":"2026-03-24","b":37169.93},{"t":"2026-03-24","b":37229.97},{"t":"2026-03-24","b":37355.71},{"t":"2026-03-24","b":37355.71},{"t":"2026-03-24","b":38377.24},{"t":"2026-03-24","b":37538.43},{"t":"2026-03-24","b":37612.21},{"t":"2026-03-24","b":37732.35},{"t":"2026-03-24","b":37716.11},{"t":"2026-03-24","b":37980.69},{"t":"2026-03-24","b":37806.33},{"t":"2026-03-24","b":37922.53},{"t":"2026-03-24","b":37985.09},{"t":"2026-03-24","b":38003.89},{"t":"2026-03-25","b":38015.29},{"t":"2026-03-25","b":38081.63},{"t":"2026-03-25","b":38202.75},{"t":"2026-03-25","b":38304.11},{"t":"2026-03-25","b":38370.05},{"t":"2026-03-25","b":38414.01},{"t":"2026-03-25","b":39075.29},{"t":"2026-03-25","b":38768.48},{"t":"2026-03-25","b":38658.52},{"t":"2026-03-25","b":38759.34},{"t":"2026-03-25","b":38872.85},{"t":"2026-03-26","b":38872.85},{"t":"2026-03-26","b":39244.31},{"t":"2026-03-26","b":39028.33},{"t":"2026-03-26","b":39197.31},{"t":"2026-03-26","b":39336.79},{"t":"2026-03-26","b":39331.05},{"t":"2026-03-26","b":39300.53},{"t":"2026-03-26","b":39401.27},{"t":"2026-03-26","b":39540.85},{"t":"2026-03-26","b":39658.11},{"t":"2026-03-26","b":41852.39},{"t":"2026-03-26","b":42473.44},{"t":"2026-03-26","b":39898.35},{"t":"2026-03-26","b":40045.15},{"t":"2026-03-26","b":40166.77},{"t":"2026-03-27","b":40197.41},{"t":"2026-03-27","b":40265.45},{"t":"2026-03-27","b":40321.07},{"t":"2026-03-27","b":40365.59},{"t":"2026-03-27","b":40426.01},{"t":"2026-03-27","b":40557.17},{"t":"2026-03-27","b":43022.41},{"t":"2026-03-27","b":41962.05},{"t":"2026-03-30","b":40770.77},{"t":"2026-03-30","b":40864.33},{"t":"2026-03-30","b":40927.11},{"t":"2026-03-30","b":40979.51},{"t":"2026-03-30","b":41067.27},{"t":"2026-03-30","b":41154.67},{"t":"2026-03-30","b":41220.17},{"t":"2026-03-31","b":41329.15},{"t":"2026-03-31","b":41474.21},{"t":"2026-03-31","b":41430.81},{"t":"2026-03-31","b":41485.43},{"t":"2026-03-31","b":41534.33},{"t":"2026-03-31","b":41717.51},{"t":"2026-03-31","b":41805.37},{"t":"2026-03-31","b":45615.07},{"t":"2026-03-31","b":46126.12},{"t":"2026-03-31","b":42950.71},{"t":"2026-03-31","b":41915.97},{"t":"2026-03-31","b":41975.61},{"t":"2026-03-31","b":42813.14},{"t":"2026-03-31","b":42076.67},{"t":"2026-03-31","b":42302.8},{"t":"2026-03-31","b":42202.32},{"t":"2026-03-31","b":42470.0},{"t":"2026-03-31","b":42297.69},{"t":"2026-03-31","b":42440.09},{"t":"2026-04-01","b":42596.35},{"t":"2026-04-01","b":42649.55},{"t":"2026-04-01","b":42773.34},{"t":"2026-04-01","b":42714.08},{"t":"2026-04-01","b":42745.24},{"t":"2026-04-01","b":42929.52},{"t":"2026-04-01","b":43112.05},{"t":"2026-04-01","b":43021.39},{"t":"2026-04-02","b":43184.79},{"t":"2026-04-02","b":43376.83},{"t":"2026-04-02","b":43527.29},{"t":"2026-04-02","b":43704.55},{"t":"2026-04-02","b":43849.01},{"t":"2026-04-02","b":43958.25},{"t":"2026-04-02","b":44145.18},{"t":"2026-04-02","b":44049.23},{"t":"2026-04-02","b":44215.27},{"t":"2026-04-02","b":44393.05},{"t":"2026-04-02","b":44489.57},{"t":"2026-04-02","b":44606.03},{"t":"2026-04-02","b":44590.25},{"t":"2026-04-02","b":44639.89},{"t":"2026-04-02","b":44666.55},{"t":"2026-04-02","b":45086.93},{"t":"2026-04-06","b":44811.17},{"t":"2026-04-06","b":44893.15},{"t":"2026-04-06","b":44893.15},{"t":"2026-04-06","b":45040.53},{"t":"2026-04-06","b":45094.03},{"t":"2026-04-06","b":45177.93},{"t":"2026-04-06","b":45143.39},{"t":"2026-04-06","b":45211.51},{"t":"2026-04-06","b":45722.96},{"t":"2026-04-06","b":45314.66},{"t":"2026-04-06","b":45314.66},{"t":"2026-04-06","b":46125.86},{"t":"2026-04-06","b":45657.64},{"t":"2026-04-07","b":45699.22},{"t":"2026-04-07","b":45938.76},{"t":"2026-04-07","b":46001.98},{"t":"2026-04-07","b":46032.34},{"t":"2026-04-07","b":46148.62},{"t":"2026-04-07","b":46253.14},{"t":"2026-04-07","b":46282.74},{"t":"2026-04-07","b":46361.94},{"t":"2026-04-07","b":46489.12},{"t":"2026-04-08","b":46608.88},{"t":"2026-04-08","b":46731.67},{"t":"2026-04-08","b":46859.33},{"t":"2026-04-08","b":46844.29},{"t":"2026-04-08","b":46883.61},{"t":"2026-04-08","b":46965.73},{"t":"2026-04-08","b":47544.07},{"t":"2026-04-08","b":47033.31},{"t":"2026-04-08","b":47095.08},{"t":"2026-04-09","b":47168.48},{"t":"2026-04-09","b":47238.64},{"t":"2026-04-09","b":47340.02},{"t":"2026-04-09","b":47489.94},{"t":"2026-04-09","b":47525.08},{"t":"2026-04-09","b":47625.56},{"t":"2026-04-10","b":47625.56},{"t":"2026-04-10","b":47859.82},{"t":"2026-04-10","b":47792.56},{"t":"2026-04-10","b":47968.6},{"t":"2026-04-13","b":48028.3},{"t":"2026-04-13","b":48158.7},{"t":"2026-04-14","b":48318.6},{"t":"2026-04-14","b":48392.4},{"t":"2026-04-14","b":48498.08},{"t":"2026-04-14","b":48738.16},{"t":"2026-04-14","b":48778.0},{"t":"2026-04-15","b":48771.9},{"t":"2026-04-15","b":48878.98},{"t":"2026-04-15","b":48945.2},{"t":"2026-04-15","b":48969.82},{"t":"2026-04-15","b":49179.06},{"t":"2026-04-15","b":49957.24},{"t":"2026-04-15","b":49736.74},{"t":"2026-04-16","b":49473.74},{"t":"2026-04-16","b":49604.78},{"t":"2026-04-16","b":49637.6},{"t":"2026-04-16","b":49709.08},{"t":"2026-04-16","b":49812.86},{"t":"2026-04-16","b":49995.26},{"t":"2026-04-17","b":50033.9},{"t":"2026-04-17","b":50249.19},{"t":"2026-04-17","b":50156.01},{"t":"2026-04-17","b":50512.84},{"t":"2026-04-17","b":50305.4},{"t":"2026-04-17","b":50333.34},{"t":"2026-04-20","b":50428.36},{"t":"2026-04-20","b":50428.36},{"t":"2026-04-20","b":50641.56},{"t":"2026-04-20","b":51323.8},{"t":"2026-04-20","b":50791.42},{"t":"2026-04-20","b":50734.7},{"t":"2026-04-21","b":50831.7},{"t":"2026-04-21","b":50930.9},{"t":"2026-04-21","b":51135.46},{"t":"2026-04-22","b":51289.04},{"t":"2026-04-22","b":51365.68},{"t":"2026-04-23","b":51344.24},{"t":"2026-04-23","b":51344.24},{"t":"2026-04-23","b":51906.03},{"t":"2026-04-23","b":51384.19},{"t":"2026-04-23","b":52052.03},{"t":"2026-04-23","b":51529.14},{"t":"2026-04-23","b":51683.97},{"t":"2026-04-24","b":51658.7},{"t":"2026-04-24","b":51825.72},{"t":"2026-04-24","b":51892.04},{"t":"2026-04-24","b":51929.68},{"t":"2026-04-24","b":51999.31},{"t":"2026-04-27","b":52012.99},{"t":"2026-04-27","b":52062.76},{"t":"2026-04-27","b":52254.6},{"t":"2026-04-27","b":52341.98},{"t":"2026-04-28","b":53033.19},{"t":"2026-04-28","b":52307.6},{"t":"2026-04-28","b":52307.6},{"t":"2026-04-28","b":52494.64},{"t":"2026-04-28","b":52559.84},{"t":"2026-04-28","b":52654.36},{"t":"2026-04-28","b":52654.36},{"t":"2026-04-29","b":52696.2},{"t":"2026-04-29","b":52762.73},{"t":"2026-04-29","b":52922.65},{"t":"2026-04-30","b":59189.47},{"t":"2026-04-30","b":66461.44},{"t":"2026-04-30","b":66662.2},{"t":"2026-04-30","b":66673.54},{"t":"2026-04-30","b":64586.96},{"t":"2026-04-30","b":58155.48},{"t":"2026-04-30","b":51519.96},{"t":"2026-04-30","b":51519.96},{"t":"2026-04-30","b":51700.15},{"t":"2026-04-30","b":51629.02},{"t":"2026-04-30","b":51698.64},{"t":"2026-04-30","b":51747.14},{"t":"2026-05-01","b":51847.72},{"t":"2026-05-01","b":51921.7},{"t":"2026-05-01","b":53935.08},{"t":"2026-05-01","b":54764.18},{"t":"2026-05-01","b":52248.75},{"t":"2026-05-01","b":52889.63},{"t":"2026-05-01","b":52643.95},{"t":"2026-05-04","b":52249.45},{"t":"2026-05-04","b":52339.57},{"t":"2026-05-04","b":52408.21},{"t":"2026-05-04","b":52673.69},{"t":"2026-05-05","b":52811.63},{"t":"2026-05-05","b":52970.29},{"t":"2026-05-05","b":53112.03},{"t":"2026-05-05","b":53207.43},{"t":"2026-05-06","b":53486.67},{"t":"2026-05-07","b":53651.69},{"t":"2026-05-07","b":53752.97},{"t":"2026-05-07","b":53851.21},{"t":"2026-05-07","b":53921.29},{"t":"2026-05-07","b":53883.19},{"t":"2026-05-07","b":54077.87},{"t":"2026-05-07","b":54711.93},{"t":"2026-05-07","b":54258.6},{"t":"2026-05-08","b":54305.37},{"t":"2026-05-08","b":54529.27},{"t":"2026-05-08","b":54660.25},{"t":"2026-05-08","b":54704.71},{"t":"2026-05-08","b":54794.83},{"t":"2026-05-08","b":54847.07},{"t":"2026-05-08","b":54892.48},{"t":"2026-05-11","b":55103.06},{"t":"2026-05-11","b":55209.7},{"t":"2026-05-11","b":55314.86},{"t":"2026-05-11","b":55410.72},{"t":"2026-05-11","b":55552.16},{"t":"2026-05-11","b":55690.76},{"t":"2026-05-11","b":55594.82},{"t":"2026-05-11","b":55773.37},{"t":"2026-05-12","b":55748.59},{"t":"2026-05-12","b":55794.97},{"t":"2026-05-12","b":55863.39},{"t":"2026-05-12","b":55934.45},{"t":"2026-05-12","b":55979.09},{"t":"2026-05-12","b":56032.21},{"t":"2026-05-12","b":57870.31},{"t":"2026-05-12","b":60823.22},{"t":"2026-05-12","b":58439.83},{"t":"2026-05-13","b":56120.52},{"t":"2026-05-13","b":56251.22},{"t":"2026-05-13","b":56385.88},{"t":"2026-05-13","b":56509.68},{"t":"2026-05-14","b":56646.92},{"t":"2026-05-14","b":56648.06},{"t":"2026-05-14","b":56930.3},{"t":"2026-05-14","b":56704.48},{"t":"2026-05-14","b":56791.14},{"t":"2026-05-14","b":56958.07},{"t":"2026-05-14","b":56915.19},{"t":"2026-05-15","b":57012.61},{"t":"2026-05-15","b":57146.41},{"t":"2026-05-15","b":57240.43},{"t":"2026-05-15","b":57381.21},{"t":"2026-05-15","b":57572.39},{"t":"2026-05-15","b":57773.57},{"t":"2026-05-15","b":57821.15},{"t":"2026-05-18","b":57924.59},{"t":"2026-05-18","b":57999.05},{"t":"2026-05-18","b":58130.43},{"t":"2026-05-18","b":58248.23},{"t":"2026-05-18","b":58328.55},{"t":"2026-05-18","b":58426.49},{"t":"2026-05-18","b":58506.51},{"t":"2026-05-18","b":58549.77},{"t":"2026-05-19","b":58720.41},{"t":"2026-05-19","b":58828.59},{"t":"2026-05-20","b":58936.49},{"t":"2026-05-20","b":59043.93},{"t":"2026-05-20","b":59171.15},{"t":"2026-05-20","b":59314.15},{"t":"2026-05-21","b":59474.99},{"t":"2026-05-21","b":59629.03},{"t":"2026-05-21","b":59951.48},{"t":"2026-05-22","b":59753.14},{"t":"2026-05-22","b":59889.46},{"t":"2026-05-22","b":59959.68},{"t":"2026-05-22","b":60062.86},{"t":"2026-05-22","b":60147.19},{"t":"2026-05-22","b":60151.53},{"t":"2026-05-25","b":60333.93},{"t":"2026-05-25","b":60442.89},{"t":"2026-05-25","b":60494.99},{"t":"2026-05-25","b":60673.11},{"t":"2026-05-25","b":60708.93},{"t":"2026-05-26","b":60784.27},{"t":"2026-05-26","b":60849.01},{"t":"2026-05-26","b":60998.05},{"t":"2026-05-27","b":61054.05},{"t":"2026-05-27","b":61103.45},{"t":"2026-05-27","b":61212.77},{"t":"2026-05-27","b":61487.78},{"t":"2026-05-27","b":61398.2},{"t":"2026-05-27","b":61430.14},{"t":"2026-05-27","b":61890.59},{"t":"2026-05-27","b":62329.71},{"t":"2026-05-28","b":61520.41},{"t":"2026-05-28","b":61553.63},{"t":"2026-05-28","b":61553.63},{"t":"2026-05-28","b":61647.97},{"t":"2026-05-28","b":61697.01},{"t":"2026-05-28","b":63533.95},{"t":"2026-05-28","b":63342.77},{"t":"2026-05-29","b":61959.85},{"t":"2026-05-29","b":62034.11},{"t":"2026-05-29","b":62129.59},{"t":"2026-05-29","b":62269.23},{"t":"2026-05-29","b":62328.19},{"t":"2026-05-29","b":62353.96},{"t":"2026-06-01","b":62384.04},{"t":"2026-06-01","b":62491.98},{"t":"2026-06-01","b":62517.06},{"t":"2026-06-01","b":65144.34},{"t":"2026-06-01","b":63814.3},{"t":"2026-06-02","b":62675.8},{"t":"2026-06-02","b":62830.8},{"t":"2026-06-02","b":62835.92},{"t":"2026-06-02","b":62835.92},{"t":"2026-06-02","b":63951.0},{"t":"2026-06-02","b":63216.31},{"t":"2026-06-03","b":63075.63},{"t":"2026-06-03","b":63143.27},{"t":"2026-06-03","b":63247.32},{"t":"2026-06-03","b":63326.42},{"t":"2026-06-03","b":63390.75},{"t":"2026-06-04","b":63534.65},{"t":"2026-06-04","b":63634.61},{"t":"2026-06-04","b":63662.77},{"t":"2026-06-04","b":63773.79},{"t":"2026-06-05","b":63944.65},{"t":"2026-06-05","b":64047.23},{"t":"2026-06-05","b":64359.7},{"t":"2026-06-08","b":64381.34},{"t":"2026-06-08","b":64432.98},{"t":"2026-06-08","b":64596.28},{"t":"2026-06-08","b":64634.16},{"t":"2026-06-08","b":64700.28},{"t":"2026-06-08","b":64940.39},{"t":"2026-06-09","b":64721.33},{"t":"2026-06-09","b":64856.45},{"t":"2026-06-09","b":64851.13},{"t":"2026-06-09","b":65020.39},{"t":"2026-06-10","b":65043.21},{"t":"2026-06-10","b":65125.97},{"t":"2026-06-10","b":65230.43},{"t":"2026-06-10","b":65476.33},{"t":"2026-06-10","b":65604.19},{"t":"2026-06-10","b":65659.93},{"t":"2026-06-10","b":65856.41},{"t":"2026-06-10","b":65729.61},{"t":"2026-06-10","b":65729.61},{"t":"2026-06-10","b":66202.15},{"t":"2026-06-10","b":67605.13},{"t":"2026-06-11","b":66042.55},{"t":"2026-06-11","b":66129.93},{"t":"2026-06-11","b":66336.45},{"t":"2026-06-11","b":66380.79},{"t":"2026-06-11","b":66380.79},{"t":"2026-06-11","b":67105.59},{"t":"2026-06-11","b":66557.59},{"t":"2026-06-11","b":66585.03},{"t":"2026-06-11","b":66683.19},{"t":"2026-06-11","b":66786.05},{"t":"2026-06-11","b":66781.89},{"t":"2026-06-12","b":66904.39},{"t":"2026-06-12","b":67062.71},{"t":"2026-06-12","b":67137.47},{"t":"2026-06-12","b":67144.51},{"t":"2026-06-12","b":67297.83},{"t":"2026-06-12","b":67386.15},{"t":"2026-06-12","b":67562.29},{"t":"2026-06-15","b":67594.59},{"t":"2026-06-15","b":67758.65},{"t":"2026-06-15","b":67787.73},{"t":"2026-06-15","b":68215.62},{"t":"2026-06-16","b":68024.55},{"t":"2026-06-16","b":68141.79},{"t":"2026-06-16","b":68192.71},{"t":"2026-06-16","b":68248.63},{"t":"2026-06-16","b":68545.59},{"t":"2026-06-17","b":68391.31},{"t":"2026-06-17","b":68515.45},{"t":"2026-06-17","b":68672.14},{"t":"2026-06-17","b":68631.18},{"t":"2026-06-17","b":68718.98},{"t":"2026-06-18","b":68842.28},{"t":"2026-06-18","b":68857.0},{"t":"2026-06-18","b":69015.1},{"t":"2026-06-18","b":69277.55},{"t":"2026-06-18","b":70651.87},{"t":"2026-06-19","b":69076.88},{"t":"2026-06-19","b":69239.82},{"t":"2026-06-19","b":69466.14},{"t":"2026-06-19","b":69466.14},{"t":"2026-06-19","b":69842.04},{"t":"2026-06-19","b":69658.05},{"t":"2026-06-22","b":69663.03},{"t":"2026-06-22","b":69663.03},{"t":"2026-06-22","b":69965.01},{"t":"2026-06-22","b":71359.43},{"t":"2026-06-22","b":69983.0},{"t":"2026-06-22","b":69964.08},{"t":"2026-06-22","b":69987.26},{"t":"2026-06-22","b":70080.45},{"t":"2026-06-22","b":70182.61},{"t":"2026-06-23","b":70174.23},{"t":"2026-06-23","b":70200.33},{"t":"2026-06-23","b":70302.67},{"t":"2026-06-23","b":70412.71},{"t":"2026-06-23","b":70621.47},{"t":"2026-06-23","b":72393.89},{"t":"2026-06-23","b":73002.89},{"t":"2026-06-23","b":70827.33},{"t":"2026-06-24","b":70893.16},{"t":"2026-06-24","b":71074.13},{"t":"2026-06-24","b":71119.35},{"t":"2026-06-24","b":71233.5},{"t":"2026-06-24","b":71276.96},{"t":"2026-06-24","b":71345.66},{"t":"2026-06-25","b":71379.44},{"t":"2026-06-25","b":71589.23},{"t":"2026-06-25","b":71497.17},{"t":"2026-06-25","b":71627.21},{"t":"2026-06-25","b":71773.47},{"t":"2026-06-25","b":71821.99},{"t":"2026-06-25","b":71956.35},{"t":"2026-06-25","b":72135.29},{"t":"2026-06-25","b":72161.63},{"t":"2026-06-25","b":72303.88},{"t":"2026-06-26","b":72324.72},{"t":"2026-06-26","b":72541.38},{"t":"2026-06-29","b":72512.3},{"t":"2026-06-29","b":72626.8},{"t":"2026-06-29","b":72723.74},{"t":"2026-06-29","b":72922.96},{"t":"2026-06-29","b":72927.52},{"t":"2026-06-30","b":73073.0},{"t":"2026-06-30","b":73180.38},{"t":"2026-06-30","b":73267.72},{"t":"2026-06-30","b":73299.92},{"t":"2026-06-30","b":73483.91},{"t":"2026-06-30","b":73522.41},{"t":"2026-07-01","b":73638.41},{"t":"2026-07-01","b":73775.35},{"t":"2026-07-02","b":73883.71},{"t":"2026-07-02","b":74059.77},{"t":"2026-07-02","b":74130.11},{"t":"2026-07-02","b":74194.81},{"t":"2026-07-02","b":74295.91},{"t":"2026-07-02","b":74460.79},{"t":"2026-07-02","b":74557.97},{"t":"2026-07-03","b":74818.47},{"t":"2026-07-03","b":74826.19},{"t":"2026-07-03","b":74920.35},{"t":"2026-07-03","b":75049.81},{"t":"2026-07-06","b":75125.99},{"t":"2026-07-06","b":75190.53},{"t":"2026-07-06","b":75362.07},{"t":"2026-07-06","b":75485.95},{"t":"2026-07-06","b":75485.95},{"t":"2026-07-06","b":75642.37},{"t":"2026-07-06","b":76867.86},{"t":"2026-07-07","b":75812.34},{"t":"2026-07-07","b":75964.74},{"t":"2026-07-07","b":76045.44},{"t":"2026-07-08","b":76107.08},{"t":"2026-07-08","b":76190.81},{"t":"2026-07-08","b":76231.77},{"t":"2026-07-08","b":76410.01},{"t":"2026-07-08","b":76529.39},{"t":"2026-07-09","b":76669.07},{"t":"2026-07-09","b":76802.43},{"t":"2026-07-09","b":76864.47},{"t":"2026-07-09","b":76918.91},{"t":"2026-07-10","b":77119.45},{"t":"2026-07-10","b":77158.21},{"t":"2026-07-10","b":77252.19},{"t":"2026-07-10","b":77336.05},{"t":"2026-07-13","b":77386.65},{"t":"2026-07-13","b":77451.99},{"t":"2026-07-13","b":77610.41},{"t":"2026-07-13","b":77726.75},{"t":"2026-07-13","b":77810.11},{"t":"2026-07-13","b":77966.95},{"t":"2026-07-14","b":77934.26},{"t":"2026-07-14","b":78070.52},{"t":"2026-07-14","b":78133.32},{"t":"2026-07-15","b":78224.88},{"t":"2026-07-15","b":78290.12},{"t":"2026-07-15","b":78418.74},{"t":"2026-07-15","b":78458.81},{"t":"2026-07-15","b":79062.7},{"t":"2026-07-16","b":78629.96},{"t":"2026-07-16","b":78736.42},{"t":"2026-07-16","b":78816.78},{"t":"2026-07-17","b":78834.98},{"t":"2026-07-17","b":78935.54},{"t":"2026-07-17","b":79031.97},{"t":"2026-07-17","b":79201.34},{"t":"2026-07-17","b":79267.3},{"t":"2026-07-17","b":79323.28},{"t":"2026-07-20","b":79361.98},{"t":"2026-07-20","b":79616.81},{"t":"2026-07-20","b":79570.37},{"t":"2026-07-20","b":79627.65},{"t":"2026-07-20","b":79705.55},{"t":"2026-07-21","b":79804.99},{"t":"2026-07-21","b":79926.31},{"t":"2026-07-22","b":80124.33},{"t":"2026-07-22","b":80273.59},{"t":"2026-07-22","b":80413.51},{"t":"2026-07-23","b":80470.03},{"t":"2026-07-23","b":80539.47},{"t":"2026-07-23","b":80623.95},{"t":"2026-07-23","b":80729.07},{"t":"2026-07-24","b":80993.73},{"t":"2026-07-27","b":81169.55},{"t":"2026-07-27","b":81319.63},{"t":"2026-07-27","b":81362.67},{"t":"2026-07-28","b":81526.11},{"t":"2026-07-28","b":81711.08},{"t":"2026-07-29","b":81650.94},{"t":"2026-07-29","b":81730.06},{"t":"2026-07-29","b":81759.49},{"t":"2026-07-29","b":81979.35},{"t":"2026-07-29","b":81896.09}],"ledger":[{"peak":66673.54,"peakDate":"2026-04-30","trough":51519.96,"troughDate":"2026-04-30","depth":15153.58,"pct":22.73,"recovered":"2026-06-10"},{"peak":46633.12,"peakDate":"2026-03-31","trough":41850.53,"troughDate":"2026-03-31","depth":4782.59,"pct":10.26,"recovered":"2026-04-08"},{"peak":39949.46,"peakDate":"2026-03-24","trough":36776.78,"troughDate":"2026-03-24","depth":3172.68,"pct":7.94,"recovered":"2026-03-26"},{"peak":42855.67,"peakDate":"2026-03-26","trough":39898.35,"troughDate":"2026-03-26","depth":2957.32,"pct":6.9,"recovered":"2026-03-27"},{"peak":73371.1,"peakDate":"2026-06-23","trough":70742.79,"troughDate":"2026-06-23","depth":2628.31,"pct":3.58,"recovered":"2026-06-30"},{"peak":43113.33,"peakDate":"2026-03-27","trough":40703.87,"troughDate":"2026-03-27","depth":2409.46,"pct":5.59,"recovered":"2026-03-31"},{"peak":35718.18,"peakDate":"2026-03-20","trough":33524.83,"troughDate":"2026-03-20","depth":2193.35,"pct":6.14,"recovered":"2026-03-23"},{"peak":70776.25,"peakDate":"2026-06-18","trough":69076.88,"troughDate":"2026-06-18","depth":1699.37,"pct":2.4,"recovered":"2026-06-22"},{"peak":67721.79,"peakDate":"2026-06-10","trough":66042.55,"troughDate":"2026-06-10","depth":1679.24,"pct":2.48,"recovered":"2026-06-15"},{"peak":71479.04,"peakDate":"2026-06-22","trough":69916.84,"troughDate":"2026-06-22","depth":1562.2,"pct":2.19,"recovered":"2026-06-23"}],"totalLots":294.18,"totalEpisodes":275,"startingBalance":3000.0,"finalBalance":81896.09,"periodStart":"2026-02-01","periodEnd":"2026-07-29","totalDeals":25798,"DATASET_END":"2026-07-29"},"floating":{"underwaterDaily":[["2026-02-01",0.0,0.0],["2026-02-02",1519.05,34.65],["2026-02-03",539.47,5.92],["2026-02-04",949.65,10.06],["2026-02-05",1949.45,16.69],["2026-02-06",2676.53,19.29],["2026-02-09",613.04,4.07],["2026-02-10",523.72,3.31],["2026-02-11",146.9,0.91],["2026-02-12",453.36,2.69],["2026-02-13",317.0,1.83],["2026-02-16",1953.9,10.99],["2026-02-17",899.52,4.93],["2026-02-18",622.22,3.21],["2026-02-19",2001.03,10.2],["2026-02-20",1079.7,5.34],["2026-02-23",547.25,2.63],["2026-02-24",461.47,2.18],["2026-02-25",726.9,3.29],["2026-02-26",492.57,2.21],["2026-02-27",2532.52,11.09],["2026-03-02",3563.19,15.34],["2026-03-03",1239.22,5.04],["2026-03-04",1088.52,4.3],["2026-03-05",1075.42,4.14],["2026-03-06",2333.01,8.9],["2026-03-09",1865.15,6.95],["2026-03-10",605.89,2.17],["2026-03-11",387.92,1.38],["2026-03-12",1230.1,4.29],["2026-03-13",655.31,2.24],["2026-03-16",2755.67,9.15],["2026-03-17",986.81,3.25],["2026-03-18",533.48,1.72],["2026-03-19",511.83,1.62],["2026-03-20",7554.87,22.75],["2026-03-23",822.75,2.27],["2026-03-24",8689.14,23.82],["2026-03-25",2509.52,6.55],["2026-03-26",10203.06,25.97],["2026-03-27",8280.16,20.56],["2026-03-30",551.9,1.34],["2026-03-31",15913.11,38.43],["2026-04-01",663.27,1.54],["2026-04-02",1778.38,3.99],["2026-04-06",2633.36,5.81],["2026-04-07",327.06,0.71],["2026-04-08",1802.23,3.84],["2026-04-09",341.9,0.72],["2026-04-10",302.8,0.64],["2026-04-13",132.5,0.27],["2026-04-14",504.48,1.04],["2026-04-15",2325.59,4.75],["2026-04-16",237.02,0.48],["2026-04-17",823.08,1.64],["2026-04-20",3154.39,6.25],["2026-04-21",80.0,0.16],["2026-04-22",300.04,0.58],["2026-04-23",1876.07,3.65],["2026-04-24",334.05,0.64],["2026-04-27",2501.05,4.78],["2026-04-28",23239.35,44.39],["2026-04-29",48862.82,93.33],["2026-04-30",10739.94,20.51],["2026-05-01",7304.75,13.95],["2026-05-04",268.39,0.51],["2026-05-05",138.98,0.26],["2026-05-06",35.62,0.07],["2026-05-07",2024.86,3.76],["2026-05-08",493.24,0.9],["2026-05-11",477.22,0.86],["2026-05-12",14813.4,26.54],["2026-05-13",155.92,0.28],["2026-05-14",962.29,1.7],["2026-05-15",267.92,0.46],["2026-05-18",394.28,0.68],["2026-05-19",164.44,0.28],["2026-05-20",174.66,0.29],["2026-05-21",1021.24,1.71],["2026-05-22",258.84,0.43],["2026-05-25",237.64,0.39],["2026-05-26",280.42,0.46],["2026-05-27",3933.13,6.41],["2026-05-28",7009.98,11.39],["2026-05-29",561.27,0.9],["2026-06-01",8363.96,13.39],["2026-06-02",3360.64,5.35],["2026-06-03",610.8,0.96],["2026-06-04",151.24,0.24],["2026-06-05",582.01,0.91],["2026-06-08",1076.0,1.66],["2026-06-09",340.68,0.53],["2026-06-10",5471.58,8.33],["2026-06-11",2365.8,3.56],["2026-06-12",544.5,0.81],["2026-06-15",786.84,1.16],["2026-06-16",896.52,1.31],["2026-06-17",541.37,0.79],["2026-06-18",5661.25,8.22],["2026-06-19",1292.17,1.86],["2026-06-22",4565.67,6.55],["2026-06-23",8680.68,12.36],["2026-06-24",467.81,0.66],["2026-06-25",692.58,0.97],["2026-06-26",363.49,0.5],["2026-06-29",407.09,0.56],["2026-06-30",739.24,1.01],["2026-07-01",54.16,0.07],["2026-07-02",342.34,0.46],["2026-07-03",178.2,0.24],["2026-07-06",3710.0,4.91],["2026-07-07",45.84,0.06],["2026-07-08",713.82,0.94],["2026-07-09",369.31,0.48],["2026-07-10",261.64,0.34],["2026-07-13",336.84,0.43],["2026-07-14",111.24,0.14],["2026-07-15",1885.97,2.41],["2026-07-16",114.92,0.15],["2026-07-17",407.61,0.52],["2026-07-20",596.2,0.75],["2026-07-21",102.8,0.13],["2026-07-22",256.76,0.32],["2026-07-23",240.82,0.3],["2026-07-24",46.4,0.06],["2026-07-27",87.24,0.11],["2026-07-28",611.93,0.75],["2026-07-29",325.87,0.4]],"floatingLedger":[{"peak":52356.44,"peakTime":"2026-04-27T15:21:00Z","trough":3493.62,"troughTime":"2026-04-29T16:46:00Z","depth":48862.82,"pct":93.33,"recoverTime":"2026-05-04T06:45:00Z"},{"peak":41405.15,"peakTime":"2026-03-31T03:26:00Z","trough":25492.04,"troughTime":"2026-03-31T04:44:00Z","depth":15913.11,"pct":38.43,"recoverTime":"2026-03-31T08:34:00Z"},{"peak":55819.25,"peakTime":"2026-05-12T04:02:00Z","trough":41005.85,"troughTime":"2026-05-12T18:24:00Z","depth":14813.4,"pct":26.54,"recoverTime":"2026-05-12T21:27:00Z"},{"peak":39283.85,"peakTime":"2026-03-26T08:10:00Z","trough":29080.79,"troughTime":"2026-03-26T09:16:00Z","depth":10203.06,"pct":25.97,"recoverTime":"2026-03-26T09:55:00Z"},{"peak":36480.56,"peakTime":"2026-03-24T03:12:00Z","trough":27791.42,"troughTime":"2026-03-24T03:39:00Z","depth":8689.14,"pct":23.82,"recoverTime":"2026-03-24T03:58:00Z"},{"peak":70214.45,"peakTime":"2026-06-23T04:09:00Z","trough":61533.77,"troughTime":"2026-06-23T11:03:00Z","depth":8680.68,"pct":12.36,"recoverTime":"2026-06-23T13:02:00Z"},{"peak":62458.62,"peakTime":"2026-06-01T08:50:00Z","trough":54094.66,"troughTime":"2026-06-01T17:00:00Z","depth":8363.96,"pct":13.39,"recoverTime":"2026-06-01T20:43:00Z"},{"peak":40271.67,"peakTime":"2026-03-27T04:20:00Z","trough":31991.51,"troughTime":"2026-03-27T08:40:00Z","depth":8280.16,"pct":20.56,"recoverTime":"2026-03-27T11:25:00Z"},{"peak":33208.9,"peakTime":"2026-03-20T09:58:00Z","trough":25654.03,"troughTime":"2026-03-20T13:56:00Z","depth":7554.87,"pct":22.75,"recoverTime":"2026-03-20T15:00:00Z"},{"peak":61547.15,"peakTime":"2026-05-28T04:01:00Z","trough":54537.17,"troughTime":"2026-05-28T07:28:00Z","depth":7009.98,"pct":11.39,"recoverTime":"2026-05-28T13:10:00Z"}],"totalFloatingEpisodes":1117,"nSamples":15644}};
 })();
