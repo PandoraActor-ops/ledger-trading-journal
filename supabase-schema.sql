@@ -32,6 +32,8 @@ CREATE TABLE public.trades (
   pnl           DECIMAL(15, 2) NOT NULL,
   commission    DECIMAL(10, 2) DEFAULT 0,
   swap          DECIMAL(10, 2) DEFAULT 0,
+  mfe           DECIMAL(15, 2),  -- max favourable excursion (account currency, >= 0)
+  mae           DECIMAL(15, 2),  -- max adverse excursion (account currency, >= 0)
   created_at    TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE (user_id, ticket)    -- ป้องกัน duplicate trade
 );

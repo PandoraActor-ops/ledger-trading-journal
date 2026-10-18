@@ -51,7 +51,11 @@ Deno.serve(async (req: Request) => {
     const { type, ...p } = body;
 
     if (type === "trade") {
-      const r = await fetch(rest("trades"), {
+      // Optional MFE/MAE (account currency) — only sent by LedgerPush v1.30+
+      const excursion: Record<string, number> = {};
+      if (p.mfe != null) excursion.mfe = p.mfe;
+      if (p.mae != null) excursion.mae = p.mae;
+      const r = await fetch(rest("trades?on_conflict=user_id,ticket"), {
         method: "POST",
         headers: headers({ "Prefer": "resolution=merge-duplicates,return=minimal" }),
         body: JSON.stringify({
@@ -61,6 +65,7 @@ Deno.serve(async (req: Request) => {
           open_time: p.open_time, close_time: p.close_time,
           duration_min: p.duration_min, pnl: p.pnl,
           commission: p.commission ?? 0, swap: p.swap ?? 0,
+          ...excursion,
         }),
       });
       if (!r.ok) throw new Error(await r.text());

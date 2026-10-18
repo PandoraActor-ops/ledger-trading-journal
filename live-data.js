@@ -61,7 +61,7 @@
     };
   }
 
-  var DAY = 86400000, CAP = 99;
+  var DAY = 86400000, CAP = 99, MIN_EXC_TRADES = 5;
 
   // Summary stats from closed trades (oldest → newest), balance starting at startBal
   function computeStats(trades, startBal) {
@@ -86,7 +86,16 @@
       if (x.pnl < worst) worst = x.pnl;
     });
 
+    // Execution quality from MFE/MAE (only trades that carry them)
+    var exc = trades.filter(function (x) { return x.mfe != null && x.mae != null; });
+    var sumMfe = exc.reduce(function (s, x) { return s + x.mfe; }, 0);
+    var sumMae = exc.reduce(function (s, x) { return s + x.mae; }, 0);
+    var sumExcPnl = exc.reduce(function (s, x) { return s + x.pnl; }, 0);
+    var hasExc = exc.length >= MIN_EXC_TRADES && sumMfe > 0;
+
     return {
+      tradeEff:       hasExc ? Math.max(0, Math.min(100, sumExcPnl / sumMfe * 100)) : null,
+      maeRatio:       hasExc ? sumMae / sumMfe : null,
       pct:            startBal > 0 ? net / startBal * 100 : 0,
       pnl:            net,
       winRate:        trades.length ? wins.length / trades.length * 100 : 0,

@@ -123,8 +123,11 @@ function computeScore(trader, period) {
 
   // ── D4: Execution Quality ──
   // Trade efficiency = net captured / max favorable excursion %
-  const tradeEff = clamp(40 + (profitFactor - 1) * 25 + (n("eff") - 1) * 20, 5, 90);
-  const maeNet   = Math.max(0.1, 1.5 - (winRate / 100) + (n("mae") - 1) * 0.6);
+  // Live traders with MFE/MAE: real capture % (net P&L ÷ total MFE) and heat ratio (MAE ÷ MFE).
+  // Otherwise fall back to the heuristic proxies.
+  const hasExc   = live && trader.tradeEff != null && trader.maeRatio != null;
+  const tradeEff = hasExc ? trader.tradeEff : clamp(40 + (profitFactor - 1) * 25 + (n("eff") - 1) * 20, 5, 90);
+  const maeNet   = hasExc ? Math.max(0.1, trader.maeRatio) : Math.max(0.1, 1.5 - (winRate / 100) + (n("mae") - 1) * 0.6);
   const d4_eff = scoreMetric(tradeEff, 60, 30, 10);
   const d4_mae = scoreMetric(maeNet, 0.5, 1.0, 2.0, true);
   const d4Score = Math.round((d4_eff + d4_mae) / 2);

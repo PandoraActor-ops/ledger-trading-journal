@@ -17,7 +17,7 @@
 //
 //+------------------------------------------------------------------+
 #property copyright "Ledger"
-#property version   "1.20"
+#property version   "1.30"
 #property description "Pushes trade statistics and history to your Ledger dashboard."
 
 //─── Inputs ─────────────────────────────────────────────────────────
@@ -84,7 +84,7 @@ int OnInit()
    g_lastEquityPush = TimeCurrent();
    g_firstRun       = false;
 
-   Print("LedgerPush v1.20: started. Stats every ",
+   Print("LedgerPush v1.30: started. Stats every ",
          InpStatMinutes > 0 ? (string)InpStatMinutes + " min." : "trade-close only.");
    return INIT_SUCCEEDED;
   }
@@ -313,6 +313,7 @@ void SyncNewTrades()
       double   closePr   = HistoryDealGetDouble(ticket, DEAL_PRICE);
       double   openPr    = 0;
       datetime openTime  = 0;
+      long     posType   = dType == DEAL_TYPE_BUY ? DEAL_TYPE_SELL : DEAL_TYPE_BUY; // fallback: closing deal is the opposite side
 
       for(int k = 0; k < total; k++)
         {
@@ -322,16 +323,23 @@ void SyncNewTrades()
            {
             openPr   = HistoryDealGetDouble(tk, DEAL_PRICE);
             openTime = (datetime)HistoryDealGetInteger(tk, DEAL_TIME);
+            posType  = HistoryDealGetInteger(tk, DEAL_TYPE);
             break;
            }
         }
 
       int durMin = openTime > 0 ? (int)((closeTime - openTime) / 60) : 0;
 
+      // Max favourable / adverse excursion during the trade (account currency)
+      double mfe = 0, mae = 0;
+      string symbol = HistoryDealGetString(ticket, DEAL_SYMBOL);
+      bool hasExc = CalcExcursion(symbol, posType == DEAL_TYPE_BUY, openPr, openTime, closeTime,
+                                  HistoryDealGetDouble(ticket, DEAL_VOLUME), mfe, mae);
+
       string j = "{\"type\":\"trade\"";
       j += ",\"ticket\":"       + IntegerToString((long)posId);
-      j += ",\"symbol\":\""     + HistoryDealGetString(ticket, DEAL_SYMBOL) + "\"";
-      j += ",\"side\":\""       + (dType == DEAL_TYPE_BUY ? "buy" : "sell") + "\"";
+      j += ",\"symbol\":\""     + symbol + "\"";
+      j += ",\"side\":\""       + (posType == DEAL_TYPE_BUY ? "buy" : "sell") + "\"";
       j += ",\"lots\":"         + DoubleToString(HistoryDealGetDouble(ticket, DEAL_VOLUME), 2);
       j += ",\"open_price\":"   + DoubleToString(openPr,  5);
       j += ",\"close_price\":"  + DoubleToString(closePr, 5);
@@ -341,11 +349,56 @@ void SyncNewTrades()
       j += ",\"pnl\":"          + DoubleToString(HistoryDealGetDouble(ticket, DEAL_PROFIT),     2);
       j += ",\"commission\":"   + DoubleToString(HistoryDealGetDouble(ticket, DEAL_COMMISSION), 2);
       j += ",\"swap\":"         + DoubleToString(HistoryDealGetDouble(ticket, DEAL_SWAP),       2);
+      if(hasExc)
+        {
+         j += ",\"mfe\":"       + DoubleToString(mfe, 2);
+         j += ",\"mae\":"       + DoubleToString(mae, 2);
+        }
       j += "}";
 
       if(HttpPost(j, "trade #" + IntegerToString((long)posId)))
          if(ticket > g_lastDealTicket) g_lastDealTicket = ticket;
      }
+  }
+
+//+------------------------------------------------------------------+
+//| MFE / MAE of a position from M1 highs/lows between open and close |
+//| Returns false (fields omitted) if bars or tick values are missing |
+//+------------------------------------------------------------------+
+bool CalcExcursion(const string sym, const bool isBuy, const double openPr,
+                   const datetime openTime, const datetime closeTime,
+                   const double lots, double &mfe, double &mae)
+  {
+   if(openTime <= 0 || closeTime < openTime || openPr <= 0 || lots <= 0) return false;
+
+   SymbolSelect(sym, true);
+   MqlRates rates[];
+   int n = CopyRates(sym, PERIOD_M1, openTime, closeTime, rates);
+   if(n <= 0) return false;
+
+   double hi = rates[0].high, lo = rates[0].low;
+   for(int i = 1; i < n; i++)
+     {
+      if(rates[i].high > hi) hi = rates[i].high;
+      if(rates[i].low  < lo) lo = rates[i].low;
+     }
+
+   double tickSize = SymbolInfoDouble(sym, SYMBOL_TRADE_TICK_SIZE);
+   double tvProfit = SymbolInfoDouble(sym, SYMBOL_TRADE_TICK_VALUE_PROFIT);
+   double tvLoss   = SymbolInfoDouble(sym, SYMBOL_TRADE_TICK_VALUE_LOSS);
+   double tv       = SymbolInfoDouble(sym, SYMBOL_TRADE_TICK_VALUE);
+   if(tvProfit <= 0) tvProfit = tv;
+   if(tvLoss   <= 0) tvLoss   = tv;
+   if(tickSize <= 0 || tvProfit <= 0 || tvLoss <= 0) return false;
+
+   double up   = MathMax(0.0, hi - openPr);   // best price above entry
+   double down = MathMax(0.0, openPr - lo);   // worst price below entry
+   double favourable = isBuy ? up   : down;
+   double adverse    = isBuy ? down : up;
+
+   mfe = favourable / tickSize * tvProfit * lots;
+   mae = adverse    / tickSize * tvLoss   * lots;
+   return true;
   }
 
 //+------------------------------------------------------------------+

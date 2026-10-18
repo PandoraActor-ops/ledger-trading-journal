@@ -111,14 +111,23 @@ async function loadTradeHistory(userId) {
 /* ─── Load closed trades for Performance (calendar + sessions) ───────── */
 async function loadPerformanceTrades(userId) {
   if (!window.sbClient) return null;
+  var BASE = "ticket, symbol, side, lots, open_price, close_price, open_time, close_time, pnl";
   var PAGE = 1000, MAX = 10000, rows = [];
+  // mfe/mae exist only after supabase/migrations/20261018_trades_mfe_mae.sql — fall back without them
+  var cols = BASE + ", mfe, mae";
   for (var from = 0; from < MAX; from += PAGE) {
     var res = await window.sbClient
       .from("trades")
-      .select("ticket, symbol, side, lots, open_price, close_price, open_time, close_time, pnl")
+      .select(cols)
       .eq("user_id", userId)
       .order("close_time", { ascending: true })
       .range(from, from + PAGE - 1);
+    if (res.error && cols !== BASE) {
+      cols = BASE;
+      from -= PAGE;
+      rows = [];
+      continue;
+    }
     if (res.error || !res.data) return rows.length ? rows : null;
     rows = rows.concat(res.data);
     if (res.data.length < PAGE) break;
@@ -134,6 +143,8 @@ async function loadPerformanceTrades(userId) {
       open:       t.open_time ? new Date(t.open_time) : null,
       close:      new Date(t.close_time),
       pnl:        +(t.pnl || 0),
+      mfe:        t.mfe == null ? null : +t.mfe,
+      mae:        t.mae == null ? null : +t.mae,
     };
   });
 }
