@@ -115,7 +115,7 @@ async function loadPerformanceTrades(userId) {
   for (var from = 0; from < MAX; from += PAGE) {
     var res = await window.sbClient
       .from("trades")
-      .select("open_time, close_time, pnl")
+      .select("ticket, symbol, side, lots, open_price, close_price, open_time, close_time, pnl")
       .eq("user_id", userId)
       .order("close_time", { ascending: true })
       .range(from, from + PAGE - 1);
@@ -125,9 +125,15 @@ async function loadPerformanceTrades(userId) {
   }
   return rows.map(function(t) {
     return {
-      open:  t.open_time ? new Date(t.open_time) : null,
-      close: new Date(t.close_time),
-      pnl:   +(t.pnl || 0),
+      id:         t.ticket,
+      symbol:     t.symbol,
+      side:       t.side,
+      lots:       +(t.lots || 0),
+      openPrice:  t.open_price,
+      closePrice: t.close_price,
+      open:       t.open_time ? new Date(t.open_time) : null,
+      close:      new Date(t.close_time),
+      pnl:        +(t.pnl || 0),
     };
   });
 }

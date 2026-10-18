@@ -163,7 +163,7 @@ function DashboardA({ trader, onOpenTrades, onOpenProfile, period }) {
             </span>
           </div>
         </div>
-        <EquityCurve data={t.equityCurve} height={260} />
+        <EquityCurve labels={t.equityLabels} data={t.equityCurve} height={260} />
       </div>
 
       {/* Two-column: P&L per trade + Streaks */}
@@ -253,7 +253,7 @@ function DashboardB({ trader, onOpenTrades, onOpenProfile, period }) {
               <span className="kicker" style={{ color: "var(--gain)" }}>Now ${fmt(t.startBal + t.pnl, 0)}</span>
             </div>
           </div>
-          <EquityCurve data={t.equityCurve} height={220} />
+          <EquityCurve labels={t.equityLabels} data={t.equityCurve} height={220} />
         </div>
         <div className="panel">
           <div className="panel-head">

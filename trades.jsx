@@ -7,7 +7,7 @@ function TradeHistory({ trader, onBack, period, setPeriod }) {
 
   // Generate a larger pool of trades for the history view
   const allTrades = useMemo(() => {
-    return genHistoryTrades(t);
+    return t.historyList || genHistoryTrades(t);
   }, [t]);
 
   const filtered = allTrades.filter((tr) => {

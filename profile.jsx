@@ -49,7 +49,7 @@ function Profile({ trader, onBack, onOpenTrades }) {
           </div>
           <span className="pill gain">+{t.pct.toFixed(2)}%</span>
         </div>
-        <EquityCurve data={t.equityCurve} height={260} />
+        <EquityCurve labels={t.equityLabels} data={t.equityCurve} height={260} />
       </div>
 
       <div className="row-2" style={{ marginTop: 14 }}>

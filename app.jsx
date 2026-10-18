@@ -68,6 +68,9 @@ function App() {
       t.streak = Array.from({ length: 12 }, () => r2() * 100 < t.winRate ? "w" : "l");
     });
 
+    // Replace the generated visuals with real closed-trade data (Supabase mode)
+    await Promise.all(traders.map((t) => window.enrichWithLiveTrades(t, activePeriod)));
+
     window.TRADERS = traders;
 
     // Identify logged-in user

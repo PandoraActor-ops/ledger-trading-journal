@@ -104,7 +104,7 @@ function Sparkline({ data, width = 100, height = 32, kind }) {
 }
 
 // Equity curve large (with axis hints + drawing animation)
-function EquityCurve({ data, height = 280 }) {
+function EquityCurve({ data, height = 280, labels }) {
   const ref = useRef(null);
   const lineRef = useRef(null);
   const [w, setW] = useState(600);
@@ -151,7 +151,7 @@ function EquityCurve({ data, height = 280 }) {
   const tickVals = [];
   for (let i = 0; i <= ticks; i++) tickVals.push(min + (range * i) / ticks);
   // x ticks (months)
-  const xLabels = ["Dec", "Jan", "Feb", "Mar", "Apr", "May"];
+  const xLabels = labels && labels.length > 1 ? labels : ["Dec", "Jan", "Feb", "Mar", "Apr", "May"];
 
   return (
     <div ref={ref} style={{ width: "100%" }}>
@@ -193,7 +193,7 @@ function EquityCurve({ data, height = 280 }) {
 
 // P&L per trade bars
 function PnLBars({ trades }) {
-  const max = Math.max(...trades.map((t) => Math.abs(t.pnl))) || 1;
+  const max = Math.max(0, ...trades.map((t) => Math.abs(t.pnl))) || 1;
   return (
     <div className="bars">
       {trades.map((t, i) => {
@@ -213,7 +213,7 @@ function PnLBars({ trades }) {
 
 // Monthly bar chart with positive/negative dual-axis
 function MonthlyBars({ data }) {
-  const max = Math.max(...data.map((d) => Math.abs(d.pnl)));
+  const max = Math.max(...data.map((d) => Math.abs(d.pnl))) || 1;
   return (
     <div style={{ display: "flex", alignItems: "stretch", gap: 14, height: 220 }}>
       {data.map((d, i) => {
