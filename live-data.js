@@ -61,6 +61,57 @@
     };
   }
 
+  var DAY = 86400000, CAP = 99;
+
+  // Summary stats from closed trades (oldest → newest), balance starting at startBal
+  function computeStats(trades, startBal) {
+    var wins = trades.filter(function (x) { return x.pnl > 0; });
+    var losses = trades.filter(function (x) { return x.pnl < 0; });
+    var grossWin = wins.reduce(function (s, x) { return s + x.pnl; }, 0);
+    var grossLoss = -losses.reduce(function (s, x) { return s + x.pnl; }, 0);
+    var net = grossWin - grossLoss;
+
+    var bal = startBal, peak = startBal, ddUsd = 0, ddPct = 0;
+    var curW = 0, curL = 0, maxW = 0, maxL = 0, best = 0, worst = 0;
+    trades.forEach(function (x) {
+      bal += x.pnl;
+      if (bal > peak) peak = bal;
+      var dd = peak - bal;
+      if (dd > ddUsd) ddUsd = dd;
+      if (peak > 0 && dd / peak * 100 > ddPct) ddPct = dd / peak * 100;
+      if (x.pnl > 0) { curW++; curL = 0; } else if (x.pnl < 0) { curL++; curW = 0; } else { curW = curL = 0; }
+      if (curW > maxW) maxW = curW;
+      if (curL > maxL) maxL = curL;
+      if (x.pnl > best) best = x.pnl;
+      if (x.pnl < worst) worst = x.pnl;
+    });
+
+    return {
+      pct:            startBal > 0 ? net / startBal * 100 : 0,
+      pnl:            net,
+      winRate:        trades.length ? wins.length / trades.length * 100 : 0,
+      trades:         trades.length,
+      profitFactor:   grossLoss > 0 ? Math.min(CAP, grossWin / grossLoss) : (grossWin > 0 ? CAP : 0),
+      recoveryFactor: ddUsd > 0 ? Math.max(-CAP, Math.min(CAP, net / ddUsd)) : (net > 0 ? CAP : 0),
+      maxDD:          ddPct,
+      maxDDUsd:       ddUsd,
+      avgWin:         wins.length ? grossWin / wins.length : 0,
+      avgLoss:        losses.length ? grossLoss / losses.length : 0,
+      maxConsWin:     maxW,
+      maxConsLoss:    maxL,
+      bestTrade:      best,
+      worstTrade:     worst,
+    };
+  }
+
+  // Length of the period window in days (alltime = span of the trades)
+  function spanDays(range, trades) {
+    var now = Date.now();
+    if (range[0] != null) return Math.max(1, ((range[1] != null ? range[1] : now) - range[0]) / DAY);
+    if (trades.length < 2) return 1;
+    return Math.max(1, (trades[trades.length - 1].close - trades[0].close) / DAY);
+  }
+
   window.enrichWithLiveTrades = async function (t, period) {
     if (!window.sbClient || !t._userId || !window.loadPerformanceTrades) return;
     var all = await fetchTrades(t._userId);
@@ -85,6 +136,11 @@
     var inPeriod = all.filter(function (tr) {
       return (range[0] == null || tr.close >= range[0]) && (range[1] == null || tr.close < range[1]);
     });
+
+    // ── Summary stats (drive the stat tiles, leaderboard and score)
+    Object.assign(t, computeStats(inPeriod, t.startBal));
+    t._live = true;
+    t._spanDays = spanDays(range, inPeriod);
 
     var bal = t.startBal, points = [bal], times = [inPeriod.length ? inPeriod[0].close.getTime() : Date.now()];
     inPeriod.forEach(function (tr) {

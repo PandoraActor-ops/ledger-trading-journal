@@ -77,10 +77,13 @@ function periodNoise(traderSeed, period, key) {
 
 // Compute the full BehaviorGrid + composite for one trader in one period.
 function computeScore(trader, period) {
-  const pf = periodFactor(period);
-  const n = (key) => periodNoise(trader.seed, period, key);
+  // Live traders already carry real stats for this period (see live-data.js):
+  // use them as-is instead of the mock period scaling/noise.
+  const live = !!trader._live;
+  const pf = live ? { pctScale: 1, tradesScale: 1 } : periodFactor(period);
+  const n = (key) => (live ? 1 : periodNoise(trader.seed, period, key));
 
-  // Period-scaled raw stats (mock — real impl would slice trade history per period)
+  // Period-scaled raw stats (mock for demo traders)
   const pct        = trader.pct        * pf.pctScale * n("pct");
   const trades     = Math.max(1, Math.round(trader.trades * pf.tradesScale * n("trades")));
   const winRate    = clamp(trader.winRate * n("winrate"), 10, 90);
@@ -109,7 +112,9 @@ function computeScore(trader, period) {
   const d2Score = Math.round((d2_mwr + d2_cv + d2_ss) / 3);
 
   // ── D3: Capital Preservation ──
-  const annRetPct  = pct * (pf.pctScale === 1 ? 12 : 1 / Math.max(0.05, pf.pctScale));
+  const annRetPct  = live
+    ? pct * 365 / Math.max(7, trader._spanDays || 30)
+    : pct * (pf.pctScale === 1 ? 12 : 1 / Math.max(0.05, pf.pctScale));
   const calmar     = annRetPct / Math.max(1, maxDDpct);
   const d3_dd  = scoreMetric(maxDDpct, 5, 15, 25, true);
   const d3_cal = scoreMetric(calmar, 3, 1, 0.5);
