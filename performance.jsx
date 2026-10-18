@@ -1,11 +1,37 @@
 /* Performance Calendar + Performance by Session
    Premium-minimal interpretation of the dark-theme reference. */
 
+/* Real closed trades for a Supabase-backed trader; null in demo mode.
+   Returns { live, loading, trades } — `trades` is null while loading or in demo mode. */
+function usePerformanceTrades(trader) {
+  const live = !!(window.sbClient && trader._userId && window.loadPerformanceTrades);
+  const [state, setState] = useState({ loading: live, trades: null });
+  useEffect(() => {
+    if (!live) { setState({ loading: false, trades: null }); return; }
+    let cancelled = false;
+    setState({ loading: true, trades: null });
+    window.loadPerformanceTrades(trader._userId).then((rows) => {
+      if (!cancelled) setState({ loading: false, trades: rows || [] });
+    });
+    return () => { cancelled = true; };
+  }, [trader._userId, live]);
+  return { live, ...state };
+}
+
 function PerformanceCalendar({ trader, period }) {
   const [view, setView] = useState("month"); // "month" | "year"
-  const [cursor, setCursor] = useState(() => new Date(2026, 4, 1)); // May 2026
+  const [cursor, setCursor] = useState(() => new Date(2026, 4, 1)); // May 2026 (demo default)
+  const { live, loading, trades } = usePerformanceTrades(trader);
 
-  const days = useMemo(() => buildTradingCalendar(trader, cursor), [trader, cursor]);
+  // Live mode: open on the month of the latest closed trade
+  useEffect(() => {
+    if (trades && trades.length) {
+      const last = trades[trades.length - 1].close;
+      setCursor(new Date(last.getUTCFullYear(), last.getUTCMonth(), 1));
+    }
+  }, [trades]);
+
+  const days = useMemo(() => buildTradingCalendar(trader, cursor, trades), [trader, cursor, trades]);
 
   const prev = () => {
     const d = new Date(cursor);
@@ -46,10 +72,12 @@ function PerformanceCalendar({ trader, period }) {
         </div>
       </div>
 
-      {view === "month" ? (
+      {live && loading ? (
+        <div className="kicker" style={{ padding: "24px 0", textAlign: "center" }}>Loading trades…</div>
+      ) : view === "month" ? (
         <MonthGrid days={days} />
       ) : (
-        <YearGrid trader={trader} year={cursor.getFullYear()} />
+        <YearGrid trader={trader} year={cursor.getFullYear()} trades={trades} />
       )}
     </div>
   );
@@ -92,13 +120,13 @@ function DayCell({ day }) {
   );
 }
 
-function YearGrid({ trader, year }) {
+function YearGrid({ trader, year, trades }) {
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const rng = mulberry(trader.seed * 7 + year);
   // Generate mini month tiles with per-month P&L
   const data = months.map((m, mi) => {
     const cursor = new Date(year, mi, 1);
-    const cal = buildTradingCalendar(trader, cursor);
+    const cal = buildTradingCalendar(trader, cursor, trades);
     const inMonth = cal.filter((d) => d.inMonth);
     const sum = inMonth.reduce((s, d) => s + d.pnl, 0);
     const winDays = inMonth.filter((d) => d.pnl > 0).length;
@@ -133,8 +161,23 @@ function YearGrid({ trader, year }) {
   );
 }
 
-// Deterministic per-trader per-day mock
-function buildTradingCalendar(trader, anchor) {
+// Real trades → per-day { trades, pnl }, keyed by UTC close date
+function dayKey(y, m, d) { return `${y}-${m}-${d}`; }
+function aggregateDays(trades) {
+  const byDay = new Map();
+  trades.forEach((t) => {
+    const k = dayKey(t.close.getUTCFullYear(), t.close.getUTCMonth(), t.close.getUTCDate());
+    const cur = byDay.get(k) || { trades: 0, pnl: 0 };
+    cur.trades += 1;
+    cur.pnl += t.pnl;
+    byDay.set(k, cur);
+  });
+  return byDay;
+}
+
+// Per-day grid: real trades when `trades` is an array, deterministic mock otherwise
+function buildTradingCalendar(trader, anchor, trades) {
+  const byDay = Array.isArray(trades) ? aggregateDays(trades) : null;
   const year = anchor.getFullYear();
   const month = anchor.getMonth();
   // Find first day of grid (Monday-start; pad with prev month days)
@@ -149,9 +192,15 @@ function buildTradingCalendar(trader, anchor) {
     date.setDate(gridStart.getDate() + i);
     const inMonth = date.getMonth() === month;
     const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+    let trades = 0, pnl = 0;
+    if (byDay) {
+      const hit = inMonth && byDay.get(dayKey(date.getFullYear(), date.getMonth(), date.getDate()));
+      if (hit) { trades = hit.trades; pnl = +hit.pnl.toFixed(2); }
+      cells.push({ date, inMonth, isWeekend, trades, pnl });
+      continue;
+    }
     const r = mulberry((trader.seed * 31 + date.getTime()) >>> 0);
     const seed = r();
-    let trades = 0, pnl = 0;
     if (!isWeekend && inMonth) {
       // Use trader.winRate-ish probability for trading days
       if (seed < 0.78) {
@@ -178,18 +227,26 @@ function mulberry(a) {
 /* ─────────── Performance by Session ─────────── */
 
 function PerformanceBySession({ trader, period }) {
-  const sessions = useMemo(() => buildSessionStats(trader), [trader]);
+  const { live, loading, trades } = usePerformanceTrades(trader);
+  const sessions = useMemo(
+    () => (trades ? buildLiveSessionStats(trades) : buildSessionStats(trader)),
+    [trader, trades]
+  );
   return (
     <div className="panel sessions-panel">
       <div className="panel-head">
         <h3>Performance by Session</h3>
         <span className="kicker">All Time</span>
       </div>
-      <div className="sessions-grid">
-        {sessions.map((s) => (
-          <SessionCard key={s.id} session={s} />
-        ))}
-      </div>
+      {live && loading ? (
+        <div className="kicker" style={{ padding: "24px 0", textAlign: "center" }}>Loading trades…</div>
+      ) : (
+        <div className="sessions-grid">
+          {sessions.map((s) => (
+            <SessionCard key={s.id} session={s} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -222,8 +279,8 @@ function SessionCard({ session }) {
           </span>
         } />
         <Row label="P.Factor" value={
-          <span className={session.pf >= 1 ? "gain" : "loss"} style={{ fontWeight: 500 }}>
-            {isFinite(session.pf) ? session.pf.toFixed(2) : "∞"}
+          <span className={session.pf == null ? "" : session.pf >= 1 ? "gain" : "loss"} style={{ fontWeight: 500 }}>
+            {session.pf == null ? "—" : isFinite(session.pf) ? session.pf.toFixed(2) : "∞"}
           </span>
         } />
         <Row label="Time" value={<span className="mono session-time">{session.time}</span>} muted />
@@ -245,17 +302,41 @@ function Row({ label, value, muted }) {
   );
 }
 
+const SESSION_DEFS = [
+  { share: 0.13, name: "Asian",       id: "asian",   icon: "🌐", color: "oklch(0.66 0.14 50)",  time: "00:00–08:00", wrAdj: -8, from: 0,  to: 8 },
+  { share: 0.46, name: "London",      id: "london",  icon: "🇬🇧", color: "oklch(0.55 0.12 240)", time: "08:00–13:00", wrAdj: -5, from: 8,  to: 13 },
+  { share: 0.30, name: "New York",    id: "ny",      icon: "🌎", color: "oklch(0.55 0.12 155)", time: "13:00–22:00", wrAdj: +12, from: 13, to: 22 },
+  { share: 0.05, name: "Off-Session", id: "off",     icon: "🌙", color: "oklch(0.62 0.10 90)",  time: "22:00–24:00", wrAdj: -2, from: 22, to: 24 },
+];
+
+// Real trades bucketed by UTC hour of entry (close time if the open time is missing)
+function buildLiveSessionStats(trades) {
+  return SESSION_DEFS.map((d) => {
+    const mine = trades.filter((t) => {
+      const h = (t.open || t.close).getUTCHours();
+      return h >= d.from && h < d.to;
+    });
+    const wins = mine.filter((t) => t.pnl > 0);
+    const losses = mine.filter((t) => t.pnl < 0);
+    const grossWin = wins.reduce((s, t) => s + t.pnl, 0);
+    const grossLoss = -losses.reduce((s, t) => s + t.pnl, 0);
+    const avgWin = wins.length ? grossWin / wins.length : 0;
+    const avgLoss = losses.length ? grossLoss / losses.length : 0;
+    return {
+      ...d,
+      trades: mine.length,
+      winRate: mine.length ? (wins.length / mine.length) * 100 : 0,
+      pnl: +(grossWin - grossLoss).toFixed(2),
+      avgRR: avgLoss > 0 ? +(avgWin / avgLoss).toFixed(2) : 0,
+      pf: !mine.length ? null : grossLoss > 0 ? grossWin / grossLoss : Infinity,
+    };
+  });
+}
+
 function buildSessionStats(trader) {
   const r = mulberry(trader.seed + 1000);
   const total = Math.max(10, trader.trades * 12);
-  // Base distribution
-  const dist = [
-    { share: 0.13, name: "Asian",       id: "asian",   icon: "🌐", color: "oklch(0.66 0.14 50)",  time: "00:00–08:00", wrAdj: -8 },
-    { share: 0.46, name: "London",      id: "london",  icon: "🇬🇧", color: "oklch(0.55 0.12 240)", time: "08:00–13:00", wrAdj: -5 },
-    { share: 0.30, name: "New York",    id: "ny",      icon: "🌎", color: "oklch(0.55 0.12 155)", time: "13:00–22:00", wrAdj: +12 },
-    { share: 0.05, name: "Off-Session", id: "off",     icon: "🌙", color: "oklch(0.62 0.10 90)",  time: "22:00–24:00", wrAdj: -2 },
-  ];
-  return dist.map((d, i) => {
+  return SESSION_DEFS.map((d, i) => {
     const trades = Math.max(2, Math.round(total * d.share * (0.85 + r() * 0.3)));
     const winRate = clamp(trader.winRate + d.wrAdj + (r() - 0.5) * 4, 35, 100);
     const wins = Math.round((winRate / 100) * trades);

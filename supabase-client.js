@@ -108,6 +108,30 @@ async function loadTradeHistory(userId) {
   });
 }
 
+/* ─── Load closed trades for Performance (calendar + sessions) ───────── */
+async function loadPerformanceTrades(userId) {
+  if (!window.sbClient) return null;
+  var PAGE = 1000, MAX = 10000, rows = [];
+  for (var from = 0; from < MAX; from += PAGE) {
+    var res = await window.sbClient
+      .from("trades")
+      .select("open_time, close_time, pnl")
+      .eq("user_id", userId)
+      .order("close_time", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (res.error || !res.data) return rows.length ? rows : null;
+    rows = rows.concat(res.data);
+    if (res.data.length < PAGE) break;
+  }
+  return rows.map(function(t) {
+    return {
+      open:  t.open_time ? new Date(t.open_time) : null,
+      close: new Date(t.close_time),
+      pnl:   +(t.pnl || 0),
+    };
+  });
+}
+
 /* ─── Load equity snapshots for chart ────────────────────────────────── */
 async function loadEquityCurve(userId) {
   if (!window.sbClient) return null;
@@ -139,5 +163,6 @@ async function getMyApiToken() {
 window.loadLeaderboard  = loadLeaderboard;
 window.loadTradeHistory = loadTradeHistory;
 window.loadEquityCurve  = loadEquityCurve;
+window.loadPerformanceTrades = loadPerformanceTrades;
 window.getMyApiToken    = getMyApiToken;
 window._maskAccount     = _maskAccount;
