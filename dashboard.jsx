@@ -43,6 +43,8 @@ function Dashboard({ trader, variant, onOpenTrades, onOpenProfile, period, setPe
 
       <TierHero trader={{ ...t, rank: currentRank }} tierDef={tierDef} score={score} />
 
+      {t.isMe && window.sbClient ? <EAConnectPanel /> : null}
+
       {variant === "A" ? <DashboardA trader={t} onOpenTrades={onOpenTrades} onOpenProfile={onOpenProfile} period={period} /> : <DashboardB trader={t} onOpenTrades={onOpenTrades} onOpenProfile={onOpenProfile} period={period} />}
     </div>
   );
@@ -414,3 +416,52 @@ function fmt(n, d = 2) {
 }
 
 Object.assign(window, { Dashboard, Stat, fmt });
+
+
+/* EA connection — shows the account's EA token and whether the EA has pushed recently */
+function EAConnectPanel() {
+  const [conn, setConn] = useState(undefined); // undefined = loading, null = none
+  const [show, setShow] = useState(false);
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    let off = false;
+    window.getMyEaConnection().then((c) => { if (!off) setConn(c); });
+    return () => { off = true; };
+  }, []);
+
+  if (conn === undefined) return null;
+  const lastUsed = conn && conn.last_used ? new Date(conn.last_used) : null;
+  const minsAgo = lastUsed ? Math.round((Date.now() - lastUsed) / 60000) : null;
+  const online = minsAgo != null && minsAgo <= 30;
+  const copy = () => {
+    try { navigator.clipboard.writeText(conn.token); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch (e) {}
+  };
+
+  return (
+    <div className="panel" style={{ marginBottom: 14 }}>
+      <div className="panel-head">
+        <h3>MT5 connection</h3>
+        <span className="kicker" style={{ color: online ? "var(--gain)" : "var(--ink-3)" }}>
+          {online ? "EA online" : lastUsed ? `Last push ${minsAgo < 120 ? minsAgo + " min" : Math.round(minsAgo / 60) + " h"} ago` : "EA not connected yet"}
+        </span>
+      </div>
+      {conn ? (
+        <>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <code className="mono" style={{ flex: 1, minWidth: 220, wordBreak: "break-all", fontSize: 12 }}>
+              {show ? conn.token : "•".repeat(32)}
+            </code>
+            <button className="btn-ghost btn" onClick={() => setShow(!show)}>{show ? "Hide" : "Show"}</button>
+            <button className="btn" onClick={copy}>{copied ? "Copied ✓" : "Copy token"}</button>
+          </div>
+          <p style={{ marginTop: 10, fontSize: 12, color: "var(--ink-3)", lineHeight: 1.6 }}>
+            In MT5: attach <strong>LedgerPush</strong> → Inputs → paste into <code>InpToken</code>. Also allow WebRequest for{" "}
+            <code>https://dxjwlrqpwidljudtheol.supabase.co</code> (Tools → Options → Expert Advisors). Keep this token private.
+          </p>
+        </>
+      ) : (
+        <p style={{ fontSize: 13, color: "var(--ink-3)" }}>No EA token found for this account.</p>
+      )}
+    </div>
+  );
+}

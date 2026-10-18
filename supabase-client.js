@@ -181,5 +181,21 @@ window.loadLeaderboard  = loadLeaderboard;
 window.loadTradeHistory = loadTradeHistory;
 window.loadEquityCurve  = loadEquityCurve;
 window.loadPerformanceTrades = loadPerformanceTrades;
+/* ─── Own EA connection: token + when the EA last pushed ─────────────── */
+async function getMyEaConnection() {
+  if (!window.sbClient) return null;
+  var { data: { session } } = await window.sbClient.auth.getSession();
+  if (!session) return null;
+  var res = await window.sbClient
+    .from("api_tokens")
+    .select("token, last_used")
+    .eq("user_id", session.user.id)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  return res.data || null;
+}
+
 window.getMyApiToken    = getMyApiToken;
+window.getMyEaConnection = getMyEaConnection;
 window._maskAccount     = _maskAccount;
