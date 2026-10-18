@@ -373,7 +373,9 @@ bool CalcExcursion(const string sym, const bool isBuy, const double openPr,
 
    SymbolSelect(sym, true);
    MqlRates rates[];
-   int n = CopyRates(sym, PERIOD_M1, openTime, closeTime, rates);
+   // Align start to the M1 bar that contains the entry (bar open time <= openTime)
+   datetime from = openTime - (openTime % 60);
+   int n = CopyRates(sym, PERIOD_M1, from, closeTime, rates);
    if(n <= 0) return false;
 
    double hi = rates[0].high, lo = rates[0].low;
